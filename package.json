@@ -2,6 +2,12 @@
   "name": "sc4053_group_project_syed_yj",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "slither": "slither . --filter-paths node_modules"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "hardhat": "^2.22.0"
