@@ -1,0 +1,117 @@
+INFO:Detectors:
+Detector: reentrancy-eth
+Reentrancy in DutchAuction.bid() (contracts/DutchAuction.sol#91-122):
+	External calls:
+	- (refunded,None) = address(msg.sender).call{value: excessEth}() (contracts/DutchAuction.sol#111)
+	State variables written after the call(s):
+	- totalTokensSold += tokensToAllocate (contracts/DutchAuction.sol#116)
+	DutchAuction.totalTokensSold (contracts/DutchAuction.sol#19) can be used in cross function reentrancies:
+	- DutchAuction.bid() (contracts/DutchAuction.sol#91-122)
+	- DutchAuction.finalizeAuction() (contracts/DutchAuction.sol#124-139)
+	- DutchAuction.isAuctionActive() (contracts/DutchAuction.sol#82-89)
+	- DutchAuction.totalTokensSold (contracts/DutchAuction.sol#19)
+Reentrancy in DutchAuction.claimTokensAndRefund() (contracts/DutchAuction.sol#141-164):
+	External calls:
+	- finalizeAuction() (contracts/DutchAuction.sol#144)
+		- token.transfer(address(0),unsoldTokens) (contracts/DutchAuction.sol#135)
+	- require(bool,string)(token.transfer(msg.sender,userTokens),Token transfer failed) (contracts/DutchAuction.sol#155)
+	- (success,None) = address(msg.sender).call{value: refundAmount}() (contracts/DutchAuction.sol#158)
+	External calls sending eth:
+	- (success,None) = address(msg.sender).call{value: refundAmount}() (contracts/DutchAuction.sol#158)
+	State variables written after the call(s):
+	- hasClaimed[msg.sender] = true (contracts/DutchAuction.sol#162)
+	DutchAuction.hasClaimed (contracts/DutchAuction.sol#26) can be used in cross function reentrancies:
+	- DutchAuction.claimTokensAndRefund() (contracts/DutchAuction.sol#141-164)
+	- DutchAuction.hasClaimed (contracts/DutchAuction.sol#26)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+INFO:Detectors:
+Detector: unchecked-transfer
+DutchAuction.finalizeAuction() (contracts/DutchAuction.sol#124-139) ignores return value by token.transfer(address(0),unsoldTokens) (contracts/DutchAuction.sol#135)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unchecked-transfer
+INFO:Detectors:
+Detector: incorrect-equality
+DutchAuction.finalizeAuction() (contracts/DutchAuction.sol#124-139) uses a dangerous strict equality:
+	- require(bool,string)(block.timestamp >= endTime || totalTokensSold == totalTokensForSale,Auction active) (contracts/DutchAuction.sol#126)
+DutchAuction.finalizeAuction() (contracts/DutchAuction.sol#124-139) uses a dangerous strict equality:
+	- clearingPrice == 0 (contracts/DutchAuction.sol#129)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+INFO:Detectors:
+Detector: reentrancy-benign
+Reentrancy in DutchAuction.bid() (contracts/DutchAuction.sol#91-122):
+	External calls:
+	- (refunded,None) = address(msg.sender).call{value: excessEth}() (contracts/DutchAuction.sol#111)
+	State variables written after the call(s):
+	- allocatedTokens[msg.sender] += tokensToAllocate (contracts/DutchAuction.sol#119)
+	- committedETH[msg.sender] += msg.value (contracts/DutchAuction.sol#118)
+	- totalEthCommitted += msg.value (contracts/DutchAuction.sol#117)
+Reentrancy in ReentrancyAttacker.receive() (contracts/ReentrancyAttacker.sol#27-36):
+	External calls:
+	- auction.claimTokensAndRefund() (contracts/ReentrancyAttacker.sol#30-34)
+	State variables written after the call(s):
+	- reentrancySucceeded = true (contracts/ReentrancyAttacker.sol#31)
+	- reentrancySucceeded = false (contracts/ReentrancyAttacker.sol#33)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+INFO:Detectors:
+Detector: reentrancy-events
+Reentrancy in DutchAuction.bid() (contracts/DutchAuction.sol#91-122):
+	External calls:
+	- (refunded,None) = address(msg.sender).call{value: excessEth}() (contracts/DutchAuction.sol#111)
+	Event emitted after the call(s):
+	- BidSubmitted(msg.sender,msg.value,tokensToAllocate,currentPrice,bridged) (contracts/DutchAuction.sol#121)
+Reentrancy in DutchAuction.claimTokensAndRefund() (contracts/DutchAuction.sol#141-164):
+	External calls:
+	- finalizeAuction() (contracts/DutchAuction.sol#144)
+		- token.transfer(address(0),unsoldTokens) (contracts/DutchAuction.sol#135)
+	- require(bool,string)(token.transfer(msg.sender,userTokens),Token transfer failed) (contracts/DutchAuction.sol#155)
+	- (success,None) = address(msg.sender).call{value: refundAmount}() (contracts/DutchAuction.sol#158)
+	External calls sending eth:
+	- (success,None) = address(msg.sender).call{value: refundAmount}() (contracts/DutchAuction.sol#158)
+	Event emitted after the call(s):
+	- TokensAndRefundClaimed(msg.sender,userTokens,refundAmount) (contracts/DutchAuction.sol#163)
+Reentrancy in DutchAuction.finalizeAuction() (contracts/DutchAuction.sol#124-139):
+	External calls:
+	- token.transfer(address(0),unsoldTokens) (contracts/DutchAuction.sol#135)
+	Event emitted after the call(s):
+	- AuctionFinalized(clearingPrice,totalTokensSold,unsoldTokens,block.timestamp) (contracts/DutchAuction.sol#138)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+INFO:Detectors:
+Detector: timestamp
+DutchAuction.getCurrentPrice() (contracts/DutchAuction.sol#68-80) uses timestamp for comparisons
+	Dangerous comparisons:
+	- clearingPrice > 0 (contracts/DutchAuction.sol#69)
+	- block.timestamp <= startTime (contracts/DutchAuction.sol#72)
+	- block.timestamp >= endTime (contracts/DutchAuction.sol#75)
+DutchAuction.isAuctionActive() (contracts/DutchAuction.sol#82-89) uses timestamp for comparisons
+	Dangerous comparisons:
+	- (! isFinalized && block.timestamp >= startTime && block.timestamp < endTime && totalTokensSold < totalTokensForSale) (contracts/DutchAuction.sol#83-88)
+DutchAuction.bid() (contracts/DutchAuction.sol#91-122) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(requestedTokens > 0,Bid too small) (contracts/DutchAuction.sol#96)
+	- requestedTokens >= remainingTokens (contracts/DutchAuction.sol#102)
+	- excessEth > 0 (contracts/DutchAuction.sol#110)
+	- require(bool,string)(refunded,Excess refund failed) (contracts/DutchAuction.sol#112)
+DutchAuction.finalizeAuction() (contracts/DutchAuction.sol#124-139) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp >= endTime || totalTokensSold == totalTokensForSale,Auction active) (contracts/DutchAuction.sol#126)
+	- clearingPrice == 0 (contracts/DutchAuction.sol#129)
+	- unsoldTokens > 0 (contracts/DutchAuction.sol#134)
+DutchAuction.claimTokensAndRefund() (contracts/DutchAuction.sol#141-164) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp >= endTime,Auction not ended) (contracts/DutchAuction.sol#143)
+	- refundAmount > 0 (contracts/DutchAuction.sol#157)
+	- require(bool,string)(success,ETH transfer failed) (contracts/DutchAuction.sol#159)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: low-level-calls
+Low level call in DutchAuction.bid() (contracts/DutchAuction.sol#91-122):
+	- (refunded,None) = address(msg.sender).call{value: excessEth}() (contracts/DutchAuction.sol#111)
+Low level call in DutchAuction.claimTokensAndRefund() (contracts/DutchAuction.sol#141-164):
+	- (success,None) = address(msg.sender).call{value: refundAmount}() (contracts/DutchAuction.sol#158)
+Low level call in DutchAuction.withdrawSellerProceeds() (contracts/DutchAuction.sol#166-172):
+	- (success,None) = address(seller).call{value: address(this).balance}() (contracts/DutchAuction.sol#170)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+INFO:Detectors:
+Detector: missing-inheritance
+DutchAuction (contracts/DutchAuction.sol#6-174) should inherit from IDutchAuction (contracts/ReentrancyAttacker.sol#4-7)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-inheritance
+INFO:Slither:. analyzed (13 contracts with 102 detectors), 19 result(s) found

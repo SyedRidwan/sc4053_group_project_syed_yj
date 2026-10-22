@@ -1,0 +1,61 @@
+
+
+  DutchAuction Full Lifecycle & Security Suite
+    1) 1. Enforces exact linear price decay without integer truncation drift
+    2) 2. Handles threshold-bridging bids and settles all bidders at uniform clearing price
+    3) 3. Permanently burns unsold tokens from ERC20 totalSupply after 20 minutes
+    4) 4. Blocks reentrancy attack during ETH refund callback
+
+
+  0 passing (385ms)
+  4 failing
+
+  1) DutchAuction Full Lifecycle & Security Suite
+       1. Enforces exact linear price decay without integer truncation drift:
+
+      AssertionError: expected 60000000000000400 to equal 60000000000000000.
+      + expected - actual
+
+      -60000000000000400
+      +60000000000000000
+      
+      at Context.<anonymous> (test\DutchAuction.test.js:36:48)
+
+  2) DutchAuction Full Lifecycle & Security Suite
+       2. Handles threshold-bridging bids and settles all bidders at uniform clearing price:
+
+      AssertionError: expected 599999999999998500000 to equal 600000000000000000000.
+      + expected - actual
+
+      -599999999999998500000
+      +600000000000000000000
+      
+      at Context.<anonymous> (test\DutchAuction.test.js:49:61)
+
+  3) DutchAuction Full Lifecycle & Security Suite
+       3. Permanently burns unsold tokens from ERC20 totalSupply after 20 minutes:
+     Error: VM Exception while processing transaction: reverted with custom error 'ERC20InvalidReceiver("0x0000000000000000000000000000000000000000")'
+    at NTUToken._transfer (@openzeppelin/contracts/token/ERC20/ERC20.sol:164)
+    at NTUToken.transfer (@openzeppelin/contracts/token/ERC20/ERC20.sol:101)
+    at DutchAuction.finalizeAuction (contracts/DutchAuction.sol:135)
+    at EdrProviderWrapper.request (node_modules\hardhat\src\internal\hardhat-network\provider\provider.ts:452:41)
+    at HardhatEthersSigner.sendTransaction (node_modules\@nomicfoundation\hardhat-ethers\src\signers.ts:185:18)
+    at send (node_modules\ethers\src.ts\contract\contract.ts:313:20)
+    at Proxy.finalizeAuction (node_modules\ethers\src.ts\contract\contract.ts:352:16)
+    at Context.<anonymous> (test\DutchAuction.test.js:78:5)
+  
+
+  4) DutchAuction Full Lifecycle & Security Suite
+       4. Blocks reentrancy attack during ETH refund callback:
+     Error: VM Exception while processing transaction: reverted with reason string 'Auction not ended'
+    at DutchAuction.claimTokensAndRefund (contracts/DutchAuction.sol:143)
+    at ReentrancyAttacker.executeAttack (contracts/ReentrancyAttacker.sol:24)
+    at EdrProviderWrapper.request (node_modules\hardhat\src\internal\hardhat-network\provider\provider.ts:452:41)
+    at HardhatEthersSigner.sendTransaction (node_modules\@nomicfoundation\hardhat-ethers\src\signers.ts:185:18)
+    at send (node_modules\ethers\src.ts\contract\contract.ts:313:20)
+    at Proxy.executeAttack (node_modules\ethers\src.ts\contract\contract.ts:352:16)
+    at Context.<anonymous> (test\DutchAuction.test.js:98:5)
+  
+
+
+
