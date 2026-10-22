@@ -16,6 +16,9 @@ was produced with Claude Code, starting in session 01 (2026-10-22).
 | AI-4 | Appended to `.gitignore` without a newline, merging two rules | Low | 01 | Fixed |
 | AI-5 | Blamed a library for a crash it did not cause, in a code comment | Low | 01 | Fixed |
 | AI-6 | Status output claimed a "guaranteed minimum" that is false once sold out | Medium | 01 | Fixed |
+| AI-7 | End-to-end test reported "connected" while the wallet was still connecting | Medium | 01 | Fixed |
+| AI-8 | Unreadable and overlapping chart on mobile; first fix made it worse | Medium | 01 | Fixed |
+| AI-9 | Wrote package versions from memory that did not exist | Low | 01 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -88,3 +91,42 @@ was produced with Claude Code, starting in session 01 (2026-10-22).
   `commitment × supply ÷ totalCommitted`.
 - **Evidence:** in the local end-to-end run, the status output showed 157.068 NTU for Alice after sell-out, and her
   claim transferred exactly 157.068062827225130067 NTU.
+
+## AI-7: False-positive end-to-end assertion
+
+- **Why the AI made the mistake:** to confirm a wallet had connected, the test waited for text ("ETH committed", then
+  the account's first characters) that also appears on the page when no wallet is connected. The overview tile and
+  the Contracts card show it regardless.
+- **Why it is problematic:** the test logged "bidder: connected" while RainbowKit was still stuck on "Opening
+  MetaMask…". A test that passes for the wrong reason gives false confidence, which is exactly what the audit is
+  meant to catch.
+- **How it was fixed:** the later "Place bid" step failed, and a screenshot showed the stuck modal. The check now
+  waits for "NTU in wallet" in the position card, which only renders for a connected account. The test also
+  connects through RainbowKit's "Browser Wallet" option: the "MetaMask" option goes through the MetaMask SDK, which
+  expects the real extension.
+- **Evidence:** `frontend/e2e/lifecycle.mjs` passes all 8 steps. Screenshots are in `evidence/2026-10-23-ui/`.
+
+## AI-8: Mobile layout problems found only by screenshots
+
+- **Why the AI made the mistake:** the chart was drawn at a fixed 640-unit size and scaled to fit, so on a 390 px
+  phone its 12 px labels became about 6 px. The first fix enlarged the fonts inside the scaled drawing, and the
+  labels then overlapped. Other issues: a "sells out at 18:45" label that read like a clock time, labels that
+  collided or were clipped at the chart edge, and side cards that did not fill the screen width.
+- **Why it is problematic:** the rubric's top band asks for "sleek UX". None of these problems show up in a type
+  check, a build, or unit tests.
+- **How it was fixed:** the chart now measures its container and draws at real pixel size, with a compact layout
+  under 480 px. Labels pick the side of their point that has room. The countdown reads "sells out in 14:38". On
+  mobile the action cards come before the chart, and the overview uses a 2×2 grid.
+- **Evidence:** `evidence/2026-10-23-ui/3-settled-mobile.png`. The end-to-end test fails if the page scrolls
+  horizontally at 390 px.
+
+## AI-9: Package versions written from memory
+
+- **Why the AI made the mistake:** it wrote `@types/react` 19.2.2 and `vitest` 4.1.4 into `frontend/package.json`
+  from memory, without checking the registry. This is the "hallucinated versions or syntax" failure the brief
+  names.
+- **Why it is problematic:** the install would have failed or pulled outdated packages.
+- **How it was fixed:** the AI checked every package with `npm view` before installing, and corrected them to
+  19.3.0 and 5.0.5. The same check showed that RainbowKit 2.2.11 only supports wagmi 2, so wagmi is pinned to
+  2.19.5 rather than 3.x.
+- **Evidence:** `frontend/package.json` and `frontend/package-lock.json`.
