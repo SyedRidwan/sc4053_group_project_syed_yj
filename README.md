@@ -22,6 +22,7 @@ The full rules, mapped clause by clause to the project brief, are in [spec.md](s
 | `contracts/` | `DutchAuction.sol`, `NTUToken.sol`, and the test-only `ReentrancyAttacker.sol` |
 | `test/` | Contract tests (unit, reentrancy, seeded random invariants) and tests for the CLI tasks |
 | `tasks/auction.js` | Hardhat tasks to deploy and operate the auction, locally or on Sepolia |
+| `frontend/` | React web app (Vite, wagmi, viem, RainbowKit), its unit tests and an end-to-end UI test |
 | `deployments/` | Addresses and ABIs per network, written by `auction:deploy` (`sepolia.json` is committed) |
 | `audit/` | AI Audit Report material: evidence logs, the AI issue log, the issues report |
 | `prompts/` | Prompt logs for each AI-assisted session |
@@ -65,6 +66,41 @@ npx hardhat auction:withdraw --network localhost
 
 To use MetaMask against the local chain, add a network with RPC `http://127.0.0.1:8545` and chain ID `31337`.
 Then import one of the test accounts printed by `npm run node`. Those keys are public; never send real funds to them.
+
+## Web app
+
+The frontend lives in `frontend/` and reads contract addresses from `deployments/*.json`, so it picks up every
+new deployment automatically.
+
+```bash
+npm --prefix frontend install    # first time only
+npm run frontend                 # http://localhost:5173
+```
+
+With `npm run node` and `npm run demo:local` running, the page shows the live auction. Connect MetaMask (on the
+local network, chain ID 31337) or switch to Sepolia once it is deployed there. Features:
+
+- **Live price and countdown**, computed every second from chain time with the contract's own formula.
+- **A price chart** that shows the falling price, the bids so far, and the committed-capital line: the auction
+  sells out where the two lines meet.
+- **A bid form** that previews how much ETH is accepted, how much is refunded immediately, and the minimum tokens
+  you receive.
+- **Your position and claims**, a **settle** button once bidding ends, and a **seller panel** to start the auction
+  and withdraw proceeds.
+- **An activity feed** of every bid, settlement, claim and withdrawal, linked to Etherscan on Sepolia.
+
+Optional settings go in `frontend/.env` (see `frontend/.env.example`): a WalletConnect project ID for mobile
+wallets, and a custom Sepolia RPC URL.
+
+```bash
+npm --prefix frontend test         # unit tests for the client-side auction maths
+npm --prefix frontend run build    # type-check and production build
+npm --prefix frontend run e2e      # full lifecycle through the UI (needs the node and the dev server running)
+```
+
+The end-to-end test deploys a fresh auction and drives it through headless Edge or Chrome with an injected test
+wallet: the seller starts it, a bidder bids, a second bid sells it out with a refund, the bidder claims, and the
+seller withdraws.
 
 ## Sepolia testnet
 
