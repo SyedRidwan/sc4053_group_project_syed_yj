@@ -1,0 +1,49 @@
+
+> sc4053_group_project_syed_yj@1.0.0 test
+> hardhat test
+
+Compiled 16 Solidity files successfully (evm target: paris).
+
+
+  DutchAuction
+    Deployment and start
+      ✔ rejects invalid constructor parameters (345ms)
+      ✔ does not accept bids before start, and quotes the start price
+      ✔ start() pulls the full sale supply and opens a 20-minute window
+      ✔ start() is seller-only, single-use and requires token approval
+    Price decay
+      ✔ decays linearly with no truncation drift
+      ✔ never increases and never drops below the reserve price
+    Bidding and clearing
+      ✔ records committed ETH without fixing a per-bid price
+      ✔ rejects zero bids and bids after the window closes
+      ✔ clears the moment committed capital meets total supply (brief: uniform clearing price)
+      ✔ caps a bid that bridges the threshold and refunds its surplus in the same transaction
+      ✔ charges every winning bidder the same clearing price
+    Expiry and burning
+      ✔ settles at the reserve price and burns unsold tokens from totalSupply
+      ✔ burns the whole supply when nobody bids
+    Claims
+      ✔ finalizes automatically on the first claim after expiry
+      ✔ rejects early, repeated and empty claims
+      ✔ never pays out more than tokensSold when the clearing price rounds down
+    Seller proceeds
+      ✔ pays the seller exactly the committed ETH, once, without touching bidders' tokens
+    Security: reentrancy (bonus)
+      ✔ blocks every re-entry from the refund callback and pays only the fair share
+      ✔ reverts the whole bid when a bidder rejects its refund, leaving state unchanged
+    Invariants (seeded random auctions)
+      ✔ holds all spec invariants for seed 1
+      ✔ holds all spec invariants for seed 2
+      ✔ holds all spec invariants for seed 3
+      ✔ holds all spec invariants for seed 4
+      ✔ holds all spec invariants for seed 5
+      ✔ holds all spec invariants for seed 6
+      ✔ holds all spec invariants for seed 7
+      ✔ holds all spec invariants for seed 8
+      ✔ holds all spec invariants for seed 9
+      ✔ holds all spec invariants for seed 10
+
+
+  29 passing (786ms)
+

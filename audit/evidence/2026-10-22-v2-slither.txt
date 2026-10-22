@@ -1,0 +1,108 @@
+
+> sc4053_group_project_syed_yj@1.0.0 slither
+> slither . --filter-paths node_modules
+
+'npx hardhat clean' running (wd: C:\Users\syedr\OneDrive\Documents\GitHub\sc4053_group_project_syed_yj)
+'npx hardhat clean --global' running (wd: C:\Users\syedr\OneDrive\Documents\GitHub\sc4053_group_project_syed_yj)
+'npx hardhat compile --force' running (wd: C:\Users\syedr\OneDrive\Documents\GitHub\sc4053_group_project_syed_yj)
+INFO:Detectors:
+Detector: reentrancy-eth
+Reentrancy in ReentrancyAttacker.receive() (contracts/ReentrancyAttacker.sol#35-51):
+	External calls:
+	- auction.bid{value: msg.value}() (contracts/ReentrancyAttacker.sol#42-44)
+	- auction.claim() (contracts/ReentrancyAttacker.sol#45-47)
+	External calls sending eth:
+	- auction.bid{value: msg.value}() (contracts/ReentrancyAttacker.sol#42-44)
+	State variables written after the call(s):
+	- reentrySuccesses ++ (contracts/ReentrancyAttacker.sol#46)
+	ReentrancyAttacker.reentrySuccesses (contracts/ReentrancyAttacker.sol#17) can be used in cross function reentrancies:
+	- ReentrancyAttacker.receive() (contracts/ReentrancyAttacker.sol#35-51)
+	- ReentrancyAttacker.reentrySuccesses (contracts/ReentrancyAttacker.sol#17)
+Reentrancy in ReentrancyAttacker.receive() (contracts/ReentrancyAttacker.sol#35-51):
+	External calls:
+	- auction.bid{value: msg.value}() (contracts/ReentrancyAttacker.sol#42-44)
+	- auction.claim() (contracts/ReentrancyAttacker.sol#45-47)
+	- auction.finalize() (contracts/ReentrancyAttacker.sol#48-50)
+	External calls sending eth:
+	- auction.bid{value: msg.value}() (contracts/ReentrancyAttacker.sol#42-44)
+	State variables written after the call(s):
+	- reentrySuccesses ++ (contracts/ReentrancyAttacker.sol#49)
+	ReentrancyAttacker.reentrySuccesses (contracts/ReentrancyAttacker.sol#17) can be used in cross function reentrancies:
+	- ReentrancyAttacker.receive() (contracts/ReentrancyAttacker.sol#35-51)
+	- ReentrancyAttacker.reentrySuccesses (contracts/ReentrancyAttacker.sol#17)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+INFO:Detectors:
+Detector: incorrect-equality
+DutchAuction.bid() (contracts/DutchAuction.sol#100-121) uses a dangerous strict equality:
+	- accepted == room (contracts/DutchAuction.sol#113)
+DutchAuction.currentPrice() (contracts/DutchAuction.sol#76-86) uses a dangerous strict equality:
+	- startTime == 0 (contracts/DutchAuction.sol#77)
+DutchAuction.tokensOf(address) (contracts/DutchAuction.sol#131-137) uses a dangerous strict equality:
+	- ! finalized || totalCommitted == 0 (contracts/DutchAuction.sol#132)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+INFO:Detectors:
+Detector: reentrancy-benign
+Reentrancy in DutchAuction.claim() (contracts/DutchAuction.sol#140-154):
+	External calls:
+	- _finalize() (contracts/DutchAuction.sol#143)
+		- token.burn(unsold) (contracts/DutchAuction.sol#186)
+	State variables written after the call(s):
+	- claimed[msg.sender] = true (contracts/DutchAuction.sol#150)
+Reentrancy in ReentrancyAttacker.receive() (contracts/ReentrancyAttacker.sol#35-51):
+	External calls:
+	- auction.bid{value: msg.value}() (contracts/ReentrancyAttacker.sol#42-44)
+	State variables written after the call(s):
+	- reentrySuccesses ++ (contracts/ReentrancyAttacker.sol#43)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+INFO:Detectors:
+Detector: timestamp
+DutchAuction.start() (contracts/DutchAuction.sol#65-73) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(startTime == 0,Already started) (contracts/DutchAuction.sol#66)
+DutchAuction.currentPrice() (contracts/DutchAuction.sol#76-86) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime == 0 (contracts/DutchAuction.sol#77)
+	- block.timestamp >= endTime (contracts/DutchAuction.sol#80)
+DutchAuction.soldOut() (contracts/DutchAuction.sol#89-91) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 && totalCommitted >= (totalTokens * currentPrice()) / TOKEN_UNIT (contracts/DutchAuction.sol#90)
+DutchAuction.isActive() (contracts/DutchAuction.sol#94-96) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 && block.timestamp < endTime && ! finalized && ! soldOut() (contracts/DutchAuction.sol#95)
+DutchAuction.bid() (contracts/DutchAuction.sol#100-121) uses timestamp for comparisons
+	Dangerous comparisons:
+	- accepted == room (contracts/DutchAuction.sol#113)
+	- refund > 0 (contracts/DutchAuction.sol#117)
+	- require(bool,string)(ok,Refund failed) (contracts/DutchAuction.sol#119)
+	- msg.value < room (contracts/DutchAuction.sol#106)
+DutchAuction.tokensOf(address) (contracts/DutchAuction.sol#131-137) uses timestamp for comparisons
+	Dangerous comparisons:
+	- ! finalized || totalCommitted == 0 (contracts/DutchAuction.sol#132)
+DutchAuction.claim() (contracts/DutchAuction.sol#140-154) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(amount > 0,Nothing to claim) (contracts/DutchAuction.sol#148)
+DutchAuction._canFinalize() (contracts/DutchAuction.sol#169-171) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 && (block.timestamp >= endTime || soldOut()) (contracts/DutchAuction.sol#170)
+DutchAuction._finalize() (contracts/DutchAuction.sol#174-188) uses timestamp for comparisons
+	Dangerous comparisons:
+	- unsold > 0 (contracts/DutchAuction.sol#185)
+	- impliedPrice > reservePrice (contracts/DutchAuction.sol#178)
+	- sold < totalTokens (contracts/DutchAuction.sol#181)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: low-level-calls
+Low level call in DutchAuction.bid() (contracts/DutchAuction.sol#100-121):
+	- (ok,None) = address(msg.sender).call{value: refund}() (contracts/DutchAuction.sol#118)
+Low level call in DutchAuction.withdrawProceeds() (contracts/DutchAuction.sol#157-167):
+	- (ok,None) = address(seller).call{value: amount}() (contracts/DutchAuction.sol#165)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+INFO:Detectors:
+Detector: missing-inheritance
+DutchAuction (contracts/DutchAuction.sol#13-189) should inherit from IDutchAuction (contracts/ReentrancyAttacker.sol#4-8)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-inheritance
+INFO:Detectors:
+Detector: naming-convention
+Parameter ReentrancyAttacker.setRejectRefunds(bool)._reject (contracts/ReentrancyAttacker.sol#23) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+INFO:Slither:. analyzed (17 contracts with 102 detectors), 20 result(s) found
