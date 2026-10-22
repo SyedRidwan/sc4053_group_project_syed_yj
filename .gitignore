@@ -6,3 +6,7 @@ cache/
 coverage/
 .env
 .DS_Store
+
+# Local deployments change on every run; deployments/sepolia.json is committed
+deployments/hardhat.json
+deployments/localhost.json
