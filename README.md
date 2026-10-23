@@ -38,6 +38,17 @@ npm run coverage    # DutchAuction.sol: 100% lines, 97% branches
 npm run slither     # needs Slither installed (pip install slither-analyzer)
 ```
 
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+| Job | Checks |
+| --- | --- |
+| Contract tests and coverage | `npm test` and `npm run coverage` (report uploaded as an artifact) |
+| Slither static analysis | Fails on any high-severity finding; the test-only `ReentrancyAttacker` is excluded |
+| Frontend unit tests and build | Vitest, type check and production build |
+| End-to-end UI test | Starts a local chain and the app, then runs the full lifecycle in headless Chrome |
+
 ## Local demo
 
 Use two terminals.

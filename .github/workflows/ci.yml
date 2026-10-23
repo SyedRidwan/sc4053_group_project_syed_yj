@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Contract tests and coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
+  slither:
+    name: Slither static analysis
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: pip install slither-analyzer==0.11.6
+      # Fails on any high-severity finding. ReentrancyAttacker is a deliberately reentrant test
+      # contract; the remaining findings are triaged in audit/evidence/2026-10-22-findings.md.
+      - run: slither . --filter-paths "node_modules|ReentrancyAttacker" --fail-high
+
+  frontend:
+    name: Frontend unit tests and build
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end UI test
+    runs-on: ubuntu-24.04
+    needs: [contracts, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: frontend
+      - name: Start a local chain
+        run: |
+          npx hardhat node > node.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -X POST -H 'content-type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' http://127.0.0.1:8545 && break; sleep 1; done
+      # Deploy once before Vite starts, so deployments/localhost.json exists when the app first loads
+      - run: npx hardhat auction:deploy --network localhost
+      - name: Start the app
+        run: |
+          npm --prefix frontend run dev -- --port 5173 --strictPort > vite.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:5173 > /dev/null && break; sleep 1; done
+      - run: npm --prefix frontend run e2e
+        env:
+          BROWSER_PATH: /usr/bin/google-chrome
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: |
+            frontend/e2e/screenshots/
+            node.log
+            vite.log

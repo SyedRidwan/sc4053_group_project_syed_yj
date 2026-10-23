@@ -113,7 +113,8 @@ console.log("Deploying a fresh, unstarted auction to localhost…");
 execSync("npx hardhat auction:deploy --network localhost", { cwd: ROOT, stdio: "ignore" });
 const { auction } = JSON.parse(readFileSync(path.join(ROOT, "deployments", "localhost.json"), "utf8"));
 
-const browser = await puppeteer.launch({ executablePath, headless: true });
+// Ubuntu 24.04 CI runners block Chrome's user-namespace sandbox, so CI runs without it
+const browser = await puppeteer.launch({ executablePath, headless: true, args: process.env.CI ? ["--no-sandbox"] : [] });
 try {
   const seller = await openAs(browser, SELLER, "seller", auction.address);
   step("seller connected");
