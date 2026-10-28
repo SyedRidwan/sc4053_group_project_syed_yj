@@ -7,6 +7,8 @@ This log feeds AI Audit Report section 5.
 commits `138f1ce`, `5f6a2c4`, `ef71e56`) was written by hand, before any AI tool was used. Its 13 issues are review
 findings on the human baseline (see `evidence/2026-10-22-findings.md`), not AI mistakes. Everything from v2 onwards
 was produced with Claude Code, starting in session 01 (2026-10-22).
+The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an AI tool, as confirmed by the team on
+2026-10-28. It has no prompt log, so the causes given for AI-10 to AI-14 are read from the code.
 
 | # | Issue | Severity | Session | Status |
 | --- | --- | --- | --- | --- |
@@ -19,6 +21,13 @@ was produced with Claude Code, starting in session 01 (2026-10-22).
 | AI-7 | End-to-end test reported "connected" while the wallet was still connecting | Medium | 01 | Fixed |
 | AI-8 | Unreadable and overlapping chart on mobile; first fix made it worse | Medium | 01 | Fixed |
 | AI-9 | Wrote package versions from memory that did not exist | Low | 01 | Fixed |
+| AI-10 | Per-bid token allocation contradicts the brief's clearing rule | High | `792b50d` | Not carried over |
+| AI-11 | `@openzeppelin/contracts` missing from `package.json`, so a fresh clone does not compile | High | `792b50d` | Not carried over |
+| AI-12 | Auction clock starts at deploy, so an unfunded auction takes bids and then locks the ETH | High | `792b50d` | Not carried over |
+| AI-13 | Seller proceeds accrue only as bidders claim | Medium | `792b50d` | Not carried over |
+| AI-14 | Template READMEs, a module for a missing contract, and mismatched hard-coded addresses | Low | `792b50d` | Not carried over |
+| AI-15 | Misread a root commit as a child of this branch from a `git log --graph` listing | Low | 03 | Fixed |
+| AI-16 | Called a branch "the team's" without confirming who wrote it (repeat of AI-2) | Medium (process) | 03 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -130,3 +139,83 @@ was produced with Claude Code, starting in session 01 (2026-10-22).
   19.3.0 and 5.0.5. The same check showed that RainbowKit 2.2.11 only supports wagmi 2, so wagmi is pinned to
   2.19.5 rather than 3.x.
 - **Evidence:** `frontend/package.json` and `frontend/package-lock.json`.
+
+## AI-10: Per-bid allocation instead of committed capital
+
+- **Why the AI made the mistake:** `bid()` fixes each bid's tokens as `msg.value × 1e18 / getCurrentPrice()` and
+  counts the auction as sold out only when those fixed quantities reach the supply. Early ETH is counted at the high
+  price it was sent at, not as demand at the current price. The brief's rule is "when total committed capital meets
+  total token supply, the auction clears". This is the same allocation rule as the hand-written v1.
+- **Why it is problematic:** strong demand can fail to clear. In probe P1 (Alice 400 ETH at 5 min, Bob 200 ETH at
+  10 min; 1,000 tokens, 1 to 0.2 ETH), the auction expires at the 0.2 ETH reserve, burns 166.67 tokens and pays the
+  seller 166.67 ETH. Under the brief's rule it sells out at 0.6 ETH and pays 600 ETH.
+- **How it was fixed:** not carried into `soln-combined`, which keeps the committed-capital contract. P1 is now a
+  regression test ("sells out on committed capital where per-bid allocation would settle at the reserve").
+- **Evidence:** `evidence/2026-10-28-branch-comparison.md` and `evidence/2026-10-28-probes/`.
+
+## AI-11: Missing OpenZeppelin dependency
+
+- **Why the AI made the mistake:** all three contracts import `@openzeppelin/contracts`, but neither `package.json`
+  nor `package-lock.json` lists it. The package was presumably present in the local `node_modules` without being
+  saved, so the tests passed on that machine.
+- **Why it is problematic:** `npm ci && npx hardhat compile` on a fresh clone fails with HHE902 ("The package
+  "@openzeppelin/contracts" is not installed"). A marker cannot build or test the branch.
+- **How it was fixed:** not carried over; this branch declares `@openzeppelin/contracts` in `package.json`. For the
+  comparison, the package was installed by hand in a scratch copy, after which the branch's 34 tests passed.
+- **Evidence:** `evidence/2026-10-28-branch-comparison.md` (side-by-side table, "Builds from a fresh clone").
+
+## AI-12: Clock starts before the auction is funded
+
+- **Why the AI made the mistake:** the constructor sets `startTime = block.timestamp`, and the tokens are sent in a
+  separate transaction afterwards (`m.call(token, "transfer", ...)` in the Ignition module). Nothing checks that the
+  auction holds the supply before it accepts bids.
+- **Why it is problematic:** in probe P3 an unfunded auction accepted a 100 ETH bid. After expiry, `finalizeAuction`
+  reverts because it cannot burn tokens it does not hold, and `claim` reverts because the auction never finalizes,
+  so the ETH is locked for good. Even when funded, the 20-minute window starts before the funding transaction lands.
+- **How it was fixed:** not carried over. In `soln-combined`, `start()` pulls the supply with `safeTransferFrom`
+  before starting the clock, and bids before `start()` revert.
+- **Evidence:** `evidence/2026-10-28-probes/per-bid-contract.output.txt` (P3).
+
+## AI-13: Seller proceeds depend on bidders claiming
+
+- **Why the AI made the mistake:** `sellerProceeds` grows only inside `claim()`, by each claimer's cost, and
+  `withdrawProceeds()` pays only that amount.
+- **Why it is problematic:** a bidder who never claims holds back the seller's payment for their tokens, and that ETH
+  stays in the contract permanently. In probe P2 the seller's withdrawal reverted with "No proceeds available" after
+  the auction ended.
+- **How it was fixed:** not carried over. In `soln-combined` the seller withdraws exactly `totalCommitted`, once,
+  regardless of claims.
+- **Evidence:** `evidence/2026-10-28-probes/per-bid-contract.output.txt` (P2).
+
+## AI-14: Leftover template code and hard-coded addresses
+
+- **Why the AI made the mistake:** the project was scaffolded from the Hardhat 3 and Vite templates, and the template
+  files were not cleaned up. Contract addresses were pasted into each script and the frontend by hand after each
+  deployment.
+- **Why it is problematic:** `README.md` and `frontend/README.md` describe the templates, not the auction.
+  `ignition/modules/Counter.ts` deploys a `Counter` contract that does not exist. The scripts point at one Sepolia
+  deployment (`0x9240...2BB6`) and the frontend at another (`0x91F7...1F13`), so they operate on different auctions.
+- **How it was fixed:** not carried over. `soln-combined` writes addresses to `deployments/<network>.json`, which
+  the tasks and the frontend both read.
+- **Evidence:** `evidence/2026-10-28-branch-comparison.md` (side-by-side table, "Deployment" and "Docs").
+
+## AI-15: Misread commit ancestry
+
+- **Why the AI made the mistake:** it read the order of a `git log --oneline --graph --all` listing, where `792b50d`
+  appeared directly above `198e641`, as parentage. The listing sorts commits by date; it did not check `%P`.
+- **Why it is problematic:** it told the operator that `dutch-auction-token-launch` was one commit on top of this
+  branch. In fact it is a separate project with its own root commit, which changes how the branches can be merged.
+- **How it was fixed:** git refused the merge as "unrelated histories". The AI checked the parents, corrected its
+  statement to the operator and merged with `--allow-unrelated-histories`.
+- **Evidence:** `../prompts/2026-10-28-session-03.md`.
+- **Prevention:** check ancestry with `git log --format=%P` or `git merge-base`, not from the order of a listing.
+
+## AI-16: Unverified attribution, again
+
+- **Why the AI made the mistake:** it inferred from the repository name and the commit author that
+  `dutch-auction-token-launch` was "the team's second implementation", and wrote that into the README and spec.
+- **Why it is problematic:** it repeats AI-2: authorship in assessed work stated without confirmation.
+- **How it was fixed:** the AI caught it on self-review and reworded both lines to describe the branch only, before
+  committing. The team later confirmed the branch was AI-produced (see the provenance note above).
+- **Evidence:** `../prompts/2026-10-28-session-03.md`.
+- **Prevention:** as for AI-2.
