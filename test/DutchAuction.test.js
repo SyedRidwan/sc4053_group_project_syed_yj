@@ -183,6 +183,22 @@ describe("DutchAuction", function () {
         expect((received * clearingPrice) / E("1")).to.equal(paid);
       }
     });
+
+    it("sells out on committed capital where per-bid allocation would settle at the reserve", async function () {
+      // Same bids as the 2026-10-28 branch comparison, scaled to these prices. Fixing each bid's tokens
+      // at its own price (dutch-auction-token-launch) never fills here: it expires at 0.02 ETH, burns
+      // 166.67 NTU and pays the seller 16.67 ETH.
+      const f = await loadFixture(startedFixture);
+      await bidAt(f, f.alice, 300, E("40"));
+      await expect(bidAt(f, f.bob, 600, E("20")))
+        .to.emit(f.auction, "AuctionFinalized")
+        .withArgs(E("0.06"), TOTAL_SUPPLY, 0);
+
+      await expect(f.auction.connect(f.alice).claim()).to.changeTokenBalance(f.token, f.alice, 666666666666666666666n);
+      await expect(f.auction.connect(f.bob).claim()).to.changeTokenBalance(f.token, f.bob, 333333333333333333333n);
+      await expect(f.auction.withdrawProceeds()).to.changeEtherBalance(f.seller, E("60"));
+      expect(await f.token.totalSupply()).to.equal(TOTAL_SUPPLY);
+    });
   });
 
   describe("Expiry and burning", function () {

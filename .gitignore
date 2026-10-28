@@ -4,6 +4,7 @@ frontend/dist/
 artifacts/
 cache/
 coverage/
+coverage.json
 .env
 .DS_Store
 
