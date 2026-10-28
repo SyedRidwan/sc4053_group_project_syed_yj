@@ -23,7 +23,7 @@ export function errorMessage(err: unknown): string {
 }
 
 /**
- * Sends a transaction, waits for it to be mined, then refreshes every query. Each card owns
+ * Sends a transaction, waits for it to be mined, refreshes every query, then reports success. Each card owns
  * one of these, so its status line only reports that card's transactions.
  */
 export function useTx(chainId: number) {
@@ -39,8 +39,10 @@ export function useTx(chainId: number) {
       if (!client) throw new Error("No RPC client for this network");
       const receipt = await client.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Transaction reverted");
-      setStatus({ state: "success", label, hash });
+      // Refresh before reporting success, so callers that reset a form on `true` do it in the same
+      // render as the success line, not after input typed in the meantime
       await queryClient.invalidateQueries();
+      setStatus({ state: "success", label, hash });
       return true;
     } catch (err) {
       setStatus({ state: "error", label, message: errorMessage(err) });

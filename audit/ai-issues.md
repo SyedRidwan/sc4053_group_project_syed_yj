@@ -28,6 +28,7 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 | AI-14 | Template READMEs, a module for a missing contract, and mismatched hard-coded addresses | Low | `792b50d` | Not carried over |
 | AI-15 | Misread a root commit as a child of this branch from a `git log --graph` listing | Low | 03 | Fixed |
 | AI-16 | Called a branch "the team's" without confirming who wrote it (repeat of AI-2) | Medium (process) | 03 | Fixed |
+| AI-17 | Race in the frontend's transaction hook: a new bid typed just after "Bid confirmed" was wiped, making CI flaky | Medium | 01 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -219,3 +220,19 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
   committing. The team later confirmed the branch was AI-produced (see the provenance note above).
 - **Evidence:** `../prompts/2026-10-28-session-03.md`.
 - **Prevention:** as for AI-2.
+
+## AI-17: Bid box cleared after the success message
+
+- **Why the AI made the mistake:** `useTx.run` set the "confirmed" status, then awaited a refresh of every query,
+  and only then returned `true`, which is when `BidCard` clears its input. The AI treated the success line and the
+  form reset as one moment, but they were separated by a network round trip.
+- **Why it is problematic:** anything typed into the bid box between "Bid confirmed" and the end of the refresh is
+  wiped. The end-to-end test does exactly that (it types the 100 ETH sell-out bid as soon as "Bid confirmed"
+  appears), so CI failed intermittently: runs #3 (a docs-only commit) and #6 timed out waiting for "This bid sells
+  out the auction", while #4 and #5 passed on the same test. A user who types their next bid straight away hits the
+  same thing.
+- **How it was fixed:** `useTx.run` now refreshes the queries first and reports success afterwards, so the success
+  line and the reset land in the same render. All cards that use `useTx` (bid, claim, settle, seller) get the fix.
+- **Evidence:** CI run #6 log (`Timed out waiting for "This bid sells out the auction"`, `lifecycle.mjs:137`) and
+  `frontend/src/hooks/useTx.ts`. The end-to-end test then passed 3 of 3 times locally; the local machine rarely hit the
+  race before the fix either, so the confirming evidence is CI passing over the following runs.
