@@ -129,7 +129,7 @@ task("auction:deploy", "Deploys HortonsToken and DutchAuction and records them i
     const token = await hre.ethers.deployContract("HortonsToken", tokenArgs, deployer);
     const tokenReceipt = await token.deploymentTransaction().wait();
     const tokenAddress = await token.getAddress();
-    console.log(`  HortonsToken:     ${tokenAddress}`);
+    console.log(`  HortonsToken: ${tokenAddress}`);
 
     const auctionArgs = [tokenAddress, supply, startPrice, reservePrice];
     const auction = await hre.ethers.deployContract("DutchAuction", auctionArgs, deployer);
