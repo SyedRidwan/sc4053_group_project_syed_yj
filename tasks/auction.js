@@ -36,7 +36,7 @@ function loadDeployment(hre) {
 
 async function getContracts(hre) {
   const deployment = loadDeployment(hre);
-  const token = await hre.ethers.getContractAt("NTUToken", deployment.token.address);
+  const token = await hre.ethers.getContractAt("HortonsToken", deployment.token.address);
   const auction = await hre.ethers.getContractAt("DutchAuction", deployment.auction.address);
   return { deployment, token, auction };
 }
@@ -68,8 +68,8 @@ function eth(hre, wei) {
   return `${hre.ethers.formatEther(wei)} ETH`;
 }
 
-function ntu(hre, amount) {
-  return `${hre.ethers.formatEther(amount)} NTU`;
+function tim(hre, amount) {
+  return `${hre.ethers.formatEther(amount)} TIM`;
 }
 
 function parseEvents(contract, receipt, eventName) {
@@ -110,10 +110,10 @@ async function latestTimestamp(hre) {
   return BigInt(block.timestamp);
 }
 
-task("auction:deploy", "Deploys NTUToken and DutchAuction and records them in deployments/<network>.json")
-  .addOptionalParam("supply", "Tokens for sale, in whole NTU", undefined, types.string)
-  .addOptionalParam("startPrice", "Opening price in ETH per NTU", undefined, types.string)
-  .addOptionalParam("reservePrice", "Reserve price in ETH per NTU", undefined, types.string)
+task("auction:deploy", "Deploys HortonsToken and DutchAuction and records them in deployments/<network>.json")
+  .addOptionalParam("supply", "Tokens for sale, in whole TIM", undefined, types.string)
+  .addOptionalParam("startPrice", "Opening price in ETH per TIM", undefined, types.string)
+  .addOptionalParam("reservePrice", "Reserve price in ETH per TIM", undefined, types.string)
   .addFlag("skipVerify", "Skip Etherscan verification on public networks")
   .setAction(async (args, hre) => {
     const defaults = isLocal(hre) ? DEFAULT_PARAMS.local : DEFAULT_PARAMS.testnet;
@@ -125,11 +125,11 @@ task("auction:deploy", "Deploys NTUToken and DutchAuction and records them in de
     await hre.run("compile", { quiet: true });
     console.log(`Deploying to ${hre.network.name} from ${deployer.address}`);
 
-    const tokenArgs = ["NTU Launch Token", "NTU", supply];
-    const token = await hre.ethers.deployContract("NTUToken", tokenArgs, deployer);
+    const tokenArgs = ["Horton's", "TIM", supply];
+    const token = await hre.ethers.deployContract("HortonsToken", tokenArgs, deployer);
     const tokenReceipt = await token.deploymentTransaction().wait();
     const tokenAddress = await token.getAddress();
-    console.log(`  NTUToken:     ${tokenAddress}`);
+    console.log(`  HortonsToken:     ${tokenAddress}`);
 
     const auctionArgs = [tokenAddress, supply, startPrice, reservePrice];
     const auction = await hre.ethers.deployContract("DutchAuction", auctionArgs, deployer);
@@ -152,7 +152,7 @@ task("auction:deploy", "Deploys NTUToken and DutchAuction and records them in de
         address: tokenAddress,
         blockNumber: tokenReceipt.blockNumber,
         txHash: tokenReceipt.hash,
-        abi: (await hre.artifacts.readArtifact("NTUToken")).abi,
+        abi: (await hre.artifacts.readArtifact("HortonsToken")).abi,
       },
       auction: {
         address: auctionAddress,
@@ -227,7 +227,7 @@ task("auction:status", "Prints the auction state, and optionally one bidder's po
       const remaining = endTime > now ? endTime - now : 0n;
       console.log(`Time remaining:   ${remaining / 60n}m ${remaining % 60n}s`);
     }
-    console.log(`Current price:    ${eth(hre, price)} per NTU`);
+    console.log(`Current price:    ${eth(hre, price)} per TIM`);
     if (finalized) {
       console.log(`Committed:        ${eth(hre, committed)}`);
     } else {
@@ -235,10 +235,10 @@ task("auction:status", "Prints the auction state, and optionally one bidder's po
     }
     if (finalized) {
       const sold = await auction.tokensSold();
-      console.log(`Clearing price:   ${eth(hre, await auction.clearingPrice())} per NTU`);
-      console.log(`Tokens sold:      ${ntu(hre, sold)}`);
-      console.log(`Tokens burned:    ${ntu(hre, supply - sold)}`);
-      console.log(`Token supply now: ${ntu(hre, await token.totalSupply())}`);
+      console.log(`Clearing price:   ${eth(hre, await auction.clearingPrice())} per TIM`);
+      console.log(`Tokens sold:      ${tim(hre, sold)}`);
+      console.log(`Tokens burned:    ${tim(hre, supply - sold)}`);
+      console.log(`Token supply now: ${tim(hre, await token.totalSupply())}`);
       console.log(`Proceeds paid:    ${(await auction.proceedsWithdrawn()) ? "yes" : "no"}`);
     }
 
@@ -247,13 +247,13 @@ task("auction:status", "Prints the auction state, and optionally one bidder's po
       const commitment = await auction.commitments(args.account);
       console.log(`  Committed:      ${eth(hre, commitment)}`);
       if (finalized) {
-        console.log(`  Tokens owed:    ${ntu(hre, await auction.tokensOf(args.account))}`);
+        console.log(`  Tokens owed:    ${tim(hre, await auction.tokensOf(args.account))}`);
       } else if (soldOut) {
         // Clearing is fixed once sold out; claims are a pro-rata share of the supply
-        console.log(`  Tokens owed:    ${ntu(hre, committed === 0n ? 0n : (commitment * supply) / committed)}`);
+        console.log(`  Tokens owed:    ${tim(hre, committed === 0n ? 0n : (commitment * supply) / committed)}`);
       } else {
         // Until it sells out the clearing price can only fall, so this is a guaranteed minimum
-        console.log(`  Tokens (min):   ${ntu(hre, (commitment * 10n ** 18n) / price)} at the current price`);
+        console.log(`  Tokens (min):   ${tim(hre, (commitment * 10n ** 18n) / price)} at the current price`);
       }
       console.log(`  Claimed:        ${(await auction.claimed(args.account)) ? "yes" : "no"}`);
     }
@@ -269,7 +269,7 @@ task("auction:bid", "Commits ETH to the auction")
     const receipt = await send(auction.connect(bidder).bid({ value: hre.ethers.parseEther(args.eth) }));
     const [placed] = parseEvents(auction, receipt, "BidPlaced");
     console.log(
-      `${bidder.address} bid ${args.eth} ETH at ${eth(hre, placed.args.priceAtBid)} per NTU: ` +
+      `${bidder.address} bid ${args.eth} ETH at ${eth(hre, placed.args.priceAtBid)} per TIM: ` +
         `accepted ${eth(hre, placed.args.ethAccepted)}, refunded ${eth(hre, placed.args.ethRefunded)}`
     );
     if (parseEvents(auction, receipt, "AuctionFinalized").length > 0) {
@@ -295,8 +295,8 @@ task("auction:finalize", "Settles the auction once it has sold out or expired").
   const receipt = await send(auction.connect(caller).finalize());
   const [finalized] = parseEvents(auction, receipt, "AuctionFinalized");
   console.log(
-    `Finalized at ${eth(hre, finalized.args.clearingPrice)} per NTU: ` +
-      `${ntu(hre, finalized.args.tokensSold)} sold, ${ntu(hre, finalized.args.tokensBurned)} burned`
+    `Finalized at ${eth(hre, finalized.args.clearingPrice)} per TIM: ` +
+      `${tim(hre, finalized.args.tokensSold)} sold, ${tim(hre, finalized.args.tokensBurned)} burned`
   );
 });
 
@@ -308,7 +308,7 @@ task("auction:claim", "Claims the caller's tokens")
 
     const receipt = await send(auction.connect(bidder).claim());
     const [claimed] = parseEvents(auction, receipt, "TokensClaimed");
-    console.log(`${bidder.address} claimed ${ntu(hre, claimed.args.amount)}`);
+    console.log(`${bidder.address} claimed ${tim(hre, claimed.args.amount)}`);
   });
 
 task("auction:withdraw", "Withdraws the sale proceeds to the seller").setAction(async (_, hre) => {
@@ -377,7 +377,7 @@ task("auction:export-abi", "Writes typed ABIs for the frontend to frontend/src/a
     "",
     `export const dutchAuctionAbi = ${await abiFor("DutchAuction")} as const;`,
     "",
-    `export const ntuTokenAbi = ${await abiFor("NTUToken")} as const;`,
+    `export const hortonsTokenAbi = ${await abiFor("HortonsToken")} as const;`,
     "",
   ].join("\n");
   fs.mkdirSync(path.dirname(file), { recursive: true });

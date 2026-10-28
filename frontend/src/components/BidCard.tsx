@@ -6,7 +6,7 @@ import { dutchAuctionAbi } from "../abi";
 import { REFRESH_MS } from "../hooks/useAuction";
 import { useTx } from "../hooks/useTx";
 import { minTokens, previewBid } from "../lib/auction";
-import { formatEth, formatNtu } from "../lib/format";
+import { formatEth, formatTim } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, Row, TxStatusLine, type AuctionView } from "./ui";
 
@@ -98,10 +98,10 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
           <div className="preview">
             <Row label="Accepted">{formatEth(preview.accepted)}</Row>
             {preview.refund > 0n && <Row label="Refunded immediately">{formatEth(preview.refund)}</Row>}
-            <Row label="You receive at least">{formatNtu(minTokens(commitment + preview.accepted, price))}</Row>
+            <Row label="You receive at least">{formatTim(minTokens(commitment + preview.accepted, price))}</Row>
             {preview.sellsOut && (
               <p className="callout">
-                This bid sells out the auction at {formatEth(price)} per NTU. The surplus comes back in the same
+                This bid sells out the auction at {formatEth(price)} per TIM. The surplus comes back in the same
                 transaction, and every bidder pays that price.
               </p>
             )}

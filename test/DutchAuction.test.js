@@ -3,16 +3,16 @@ const { ethers } = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 const E = ethers.parseEther;
-const TOTAL_SUPPLY = E("1000"); // 1,000 NTU
-const START_PRICE = E("0.1"); // 0.10 ETH per NTU
-const RESERVE_PRICE = E("0.02"); // 0.02 ETH per NTU
+const TOTAL_SUPPLY = E("1000"); // 1,000 TIM
+const START_PRICE = E("0.1"); // 0.10 ETH per TIM
+const RESERVE_PRICE = E("0.02"); // 0.02 ETH per TIM
 const DURATION = 20n * 60n; // 1200 seconds
 
 async function deployFixture() {
   const [seller, alice, bob, charlie, ...others] = await ethers.getSigners();
 
-  const NTUToken = await ethers.getContractFactory("NTUToken");
-  const token = await NTUToken.deploy("NTU Launch Token", "NTU", TOTAL_SUPPLY);
+  const HortonsToken = await ethers.getContractFactory("HortonsToken");
+  const token = await HortonsToken.deploy("Horton's", "TIM", TOTAL_SUPPLY);
 
   const DutchAuction = await ethers.getContractFactory("DutchAuction");
   const auction = await DutchAuction.deploy(await token.getAddress(), TOTAL_SUPPLY, START_PRICE, RESERVE_PRICE);
@@ -141,7 +141,7 @@ describe("DutchAuction", function () {
       const f = await loadFixture(startedFixture);
       await bidAt(f, f.alice, 300, E("48"));
 
-      // 48 ETH buys 1,000 NTU once the price reaches 0.048 ETH, at t = 780 s
+      // 48 ETH buys 1,000 TIM once the price reaches 0.048 ETH, at t = 780 s
       await time.increaseTo(f.startTime + 779n);
       expect(await f.auction.soldOut()).to.equal(false);
       await time.increaseTo(f.startTime + 780n);
@@ -187,7 +187,7 @@ describe("DutchAuction", function () {
     it("sells out on committed capital where per-bid allocation would settle at the reserve", async function () {
       // Same bids as the 2026-10-28 branch comparison, scaled to these prices. Fixing each bid's tokens
       // at its own price (dutch-auction-token-launch) never fills here: it expires at 0.02 ETH, burns
-      // 166.67 NTU and pays the seller 16.67 ETH.
+      // 166.67 TIM and pays the seller 16.67 ETH.
       const f = await loadFixture(startedFixture);
       await bidAt(f, f.alice, 300, E("40"));
       await expect(bidAt(f, f.bob, 600, E("20")))

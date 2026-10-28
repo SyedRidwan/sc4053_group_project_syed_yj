@@ -11,7 +11,7 @@
 Ethereum token launch where tokens are bid for with Ether and distributed by a uniform clearing price Dutch auction
 over a 20-minute window.
 
-- **Project token (`NTUToken.sol`):** fixed-supply ERC20 (18 decimals) with `ERC20Burnable`, so burns reduce `totalSupply`.
+- **Project token (`HortonsToken.sol`):** fixed-supply ERC20 (18 decimals) with `ERC20Burnable`, so burns reduce `totalSupply`.
 - **Auction engine (`DutchAuction.sol`):** separate contract holding the sale supply, ETH commitments, clearing,
   burning, claims and seller proceeds.
 

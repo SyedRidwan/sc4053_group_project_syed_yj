@@ -1,7 +1,7 @@
 import { usePublicClient, useWriteContract } from "wagmi";
-import { dutchAuctionAbi, ntuTokenAbi } from "../abi";
+import { dutchAuctionAbi, hortonsTokenAbi } from "../abi";
 import { useTx } from "../hooks/useTx";
-import { formatEth, formatNtu } from "../lib/format";
+import { formatEth, formatTim } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, Row, TxStatusLine, type AuctionView } from "./ui";
 
@@ -18,15 +18,15 @@ export function SellerCard({ deployment, snapshot, phase, account }: AuctionView
     // start() pulls the supply with transferFrom, so it needs an allowance first
     const allowance = await client.readContract({
       address: deployment.token.address,
-      abi: ntuTokenAbi,
+      abi: hortonsTokenAbi,
       functionName: "allowance",
       args: [account, deployment.auction.address],
     });
     if (allowance < params.totalTokens) {
-      const approved = await tx.run("Approve NTU", () =>
+      const approved = await tx.run("Approve TIM", () =>
         writeContractAsync({
           address: deployment.token.address,
-          abi: ntuTokenAbi,
+          abi: hortonsTokenAbi,
           functionName: "approve",
           args: [deployment.auction.address, params.totalTokens],
           chainId,
@@ -54,7 +54,7 @@ export function SellerCard({ deployment, snapshot, phase, account }: AuctionView
     <Card className="card-seller" title="Seller">
       {phase === "not-started" && (
         <>
-          <Row label="Supply">{formatNtu(params.totalTokens)}</Row>
+          <Row label="Supply">{formatTim(params.totalTokens)}</Row>
           <Row label="Start price">{formatEth(params.startPrice)}</Row>
           <Row label="Reserve price">{formatEth(params.reservePrice)}</Row>
           <p className="muted">Starting moves the supply into the auction and opens the 20-minute window.</p>

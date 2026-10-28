@@ -52,7 +52,7 @@ scaled to the suite's prices.
 | Seller proceeds | Exactly `totalCommitted`, once | Sum of claimed costs (see P2) | `totalCommitted` |
 | Builds from a fresh clone | Yes | No: `@openzeppelin/contracts` is missing from `package.json`, so `npm ci && npx hardhat compile` fails with HHE902 | Yes |
 | Contract tests | 34 (unit, reentrancy, 10 seeded random invariant runs, CLI tasks) | 34 scenario tests (pass once OpenZeppelin is installed by hand) | 39 |
-| Token tests | None | 6 (`AuctionToken.ts`) | 4, ported (`NTUToken.test.js`) |
+| Token tests | None | 6 (`AuctionToken.ts`) | 4, ported (`HortonsToken.test.js`) |
 | Coverage, Slither, mutation testing | 100% lines, 96.97% branches; Slither triaged; 9 mutations | None | Kept |
 | CI | Tests, coverage, Slither, frontend build, end-to-end UI | None | Kept |
 | Deployment | Hardhat tasks; addresses and ABIs written to `deployments/<network>.json` for the frontend | Ignition module; six Sepolia deployments with journals; addresses hard-coded in scripts and the frontend | Tasks |
@@ -65,7 +65,7 @@ scaled to the suite's prices.
 
 - **History:** `soln-combined` records `792b50d` as a merged parent, so the branch's work stays in the project
   history, including the six Sepolia deployment journals.
-- **Token tests:** `test/AuctionToken.ts` ported to `test/NTUToken.test.js`, plus a check that nobody can burn
+- **Token tests:** `test/AuctionToken.ts` ported to `test/HortonsToken.test.js` (named `NTUToken.test.js` before the token was renamed to Horton's), plus a check that nobody can burn
   tokens they neither hold nor were approved for.
 - **The per-bid design as a counter-example:** probe P1, kept as a regression test.
 

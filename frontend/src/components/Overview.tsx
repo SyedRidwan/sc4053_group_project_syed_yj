@@ -1,5 +1,5 @@
 import { ethToSellOut, impliedPrice, sellOutOffset } from "../lib/auction";
-import { formatCountdown, formatEth, formatNtu } from "../lib/format";
+import { formatCountdown, formatEth, formatTim } from "../lib/format";
 import { PhaseBadge, type AuctionView } from "./ui";
 
 export function Overview({ snapshot, now, price, phase }: AuctionView) {
@@ -16,7 +16,7 @@ export function Overview({ snapshot, now, price, phase }: AuctionView) {
   if (phase === "finalized") {
     outlook = `Cleared at ${formatEth(snapshot.clearingPrice)}`;
   } else if (phase === "not-started") {
-    outlook = `${formatNtu(params.totalTokens)} for sale`;
+    outlook = `${formatTim(params.totalTokens)} for sale`;
   } else {
     const offset = sellOutOffset(params, totalCommitted);
     if (phase === "sold-out") outlook = `Sold out at ${formatEth(impliedPrice(params, totalCommitted))}`;
@@ -40,7 +40,7 @@ export function Overview({ snapshot, now, price, phase }: AuctionView) {
         <span className="stat-sub">{startTime === 0n ? "Starts when the seller opens it" : "Chain time"}</span>
       </div>
       <div className="stat">
-        <span className="stat-label">Price per NTU</span>
+        <span className="stat-label">Price per TIM</span>
         <span className="stat-value">{formatEth(phase === "finalized" ? snapshot.clearingPrice : price)}</span>
         <span className="stat-sub">
           {formatEth(params.startPrice)} → {formatEth(params.reservePrice)}

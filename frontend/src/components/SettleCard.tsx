@@ -2,7 +2,7 @@ import { useWriteContract } from "wagmi";
 import { dutchAuctionAbi } from "../abi";
 import { useTx } from "../hooks/useTx";
 import { impliedPrice, TOKEN_UNIT } from "../lib/auction";
-import { formatEth, formatNtu } from "../lib/format";
+import { formatEth, formatTim } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, TxStatusLine, type AuctionView } from "./ui";
 
@@ -23,10 +23,10 @@ export function SettleCard({ deployment, snapshot, account }: AuctionView) {
   return (
     <Card className="card-settle" title="Settle the auction" tone="accent">
       <p>
-        Bidding is over. Settling fixes the clearing price at <strong>{formatEth(clearing)}</strong> per NTU
+        Bidding is over. Settling fixes the clearing price at <strong>{formatEth(clearing)}</strong> per TIM
         {burned > 0n ? (
           <>
-            {" "}and permanently burns <strong>{formatNtu(burned)}</strong> that did not sell.
+            {" "}and permanently burns <strong>{formatTim(burned)}</strong> that did not sell.
           </>
         ) : (
           "."

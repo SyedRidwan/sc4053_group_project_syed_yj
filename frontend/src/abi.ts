@@ -471,7 +471,7 @@ export const dutchAuctionAbi = [
   }
 ] as const;
 
-export const ntuTokenAbi = [
+export const hortonsTokenAbi = [
   {
     "inputs": [
       {

@@ -1,4 +1,4 @@
-# NTU Token Launch: Uniform-Price Dutch Auction
+# Horton's Token Launch: Uniform-Price Dutch Auction
 
 SC4053 Blockchain Technology development project, Option 2. An ERC20 token launch where bidders commit Ether
 while the price falls for 20 minutes. Everyone pays the same clearing price, and unsold tokens are burned.
@@ -7,7 +7,7 @@ The full rules, mapped clause by clause to the project brief, are in [spec.md](s
 
 ## How it works
 
-1. The seller deploys `NTUToken` and `DutchAuction`, then calls `start()`. This pulls the sale supply into the
+1. The seller deploys `HortonsToken` and `DutchAuction`, then calls `start()`. This pulls the sale supply into the
    auction and starts the 20-minute clock.
 2. The price falls linearly from the start price to the reserve price. Bidders commit ETH with `bid()`.
 3. The auction clears as soon as the committed ETH buys the whole supply at the current price. The bid that
@@ -19,7 +19,7 @@ The full rules, mapped clause by clause to the project brief, are in [spec.md](s
 
 | Path | Contents |
 | --- | --- |
-| `contracts/` | `DutchAuction.sol`, `NTUToken.sol`, and the test-only `ReentrancyAttacker.sol` |
+| `contracts/` | `DutchAuction.sol`, `HortonsToken.sol`, and the test-only `ReentrancyAttacker.sol` |
 | `test/` | Auction and token tests (unit, reentrancy, seeded random invariants) and tests for the CLI tasks |
 | `tasks/auction.js` | Hardhat tasks to deploy and operate the auction, locally or on Sepolia |
 | `frontend/` | React web app (Vite, wagmi, viem, RainbowKit), its unit tests and an end-to-end UI test |
@@ -60,10 +60,10 @@ npm run node
 # Terminal 2: deploy a fresh auction and play a scenario
 npm run demo:local                                                    # "live": two bids, auction left running
 npx hardhat auction:demo --scenario soldout --network localhost       # bridging bid sells it out at 0.06 ETH
-npx hardhat auction:demo --scenario expiry --network localhost        # time runs out, 750 NTU burned
+npx hardhat auction:demo --scenario expiry --network localhost        # time runs out, 750 TIM burned
 ```
 
-Local prices default to a 0.1 ETH start and a 0.02 ETH reserve for 1,000 NTU. The demo skips chain time forward,
+Local prices default to a 0.1 ETH start and a 0.02 ETH reserve for 1,000 TIM. The demo skips chain time forward,
 so nobody waits 20 minutes. To drive the auction by hand:
 
 ```bash
@@ -135,7 +135,7 @@ seller withdraws.
    ```
 
 Faucets give out little ETH, so Sepolia prices default to a 0.00005 ETH start and a 0.00001 ETH reserve for
-1,000 NTU. Selling out then costs between 0.01 and 0.05 ETH. Override the defaults with
+1,000 TIM. Selling out then costs between 0.01 and 0.05 ETH. Override the defaults with
 `--supply`, `--start-price` and `--reserve-price` on `auction:deploy`. The other tasks work on Sepolia too,
 except `auction:advance` and `auction:demo`, because real chain time cannot be skipped.
 

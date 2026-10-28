@@ -2,7 +2,7 @@ import { useWriteContract } from "wagmi";
 import { dutchAuctionAbi } from "../abi";
 import { useTx } from "../hooks/useTx";
 import { minTokens, proRataTokens, TOKEN_UNIT } from "../lib/auction";
-import { formatEth, formatNtu } from "../lib/format";
+import { formatEth, formatTim } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, Row, TxStatusLine, type AuctionView } from "./ui";
 
@@ -54,9 +54,9 @@ export function PositionCard({ deployment, snapshot, price, phase, account }: Au
   return (
     <Card className="card-position" title="Your position">
       <Row label="ETH committed">{formatEth(commitment)}</Row>
-      {commitment > 0n && <Row label={tokensLabel}>{claimed ? "Claimed" : formatNtu(tokens)}</Row>}
-      {phase === "finalized" && commitment > 0n && <Row label="Price you paid">{formatEth(snapshot.clearingPrice)} per NTU</Row>}
-      <Row label="NTU in wallet">{formatNtu(position.tokenBalance)}</Row>
+      {commitment > 0n && <Row label={tokensLabel}>{claimed ? "Claimed" : formatTim(tokens)}</Row>}
+      {phase === "finalized" && commitment > 0n && <Row label="Price you paid">{formatEth(snapshot.clearingPrice)} per TIM</Row>}
+      <Row label="TIM in wallet">{formatTim(position.tokenBalance)}</Row>
       {commitment === 0n && <p className="muted">You have not bid in this auction.</p>}
       {canClaim && (
         <button className="button button-primary" type="button" onClick={claim} disabled={tx.busy}>

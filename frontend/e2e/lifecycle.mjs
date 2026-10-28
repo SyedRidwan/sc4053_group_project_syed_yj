@@ -98,8 +98,8 @@ async function openAs(browser, account, label, auctionAddress) {
   await page.evaluate(() =>
     [...document.querySelectorAll("[role=dialog] button")].find((b) => b.innerText.trim() === "Browser Wallet").click()
   );
-  // "NTU in wallet" only renders once a wallet is connected and its position has loaded
-  await page.waitForFunction(() => document.querySelector(".card-position")?.innerText.includes("NTU in wallet"), {
+  // "TIM in wallet" only renders once a wallet is connected and its position has loaded
+  await page.waitForFunction(() => document.querySelector(".card-position")?.innerText.includes("TIM in wallet"), {
     timeout: 30000,
   });
   return page;
@@ -153,7 +153,7 @@ try {
   await bidder.reload({ waitUntil: "networkidle2" });
   await waitText(bidder, "Result");
   const result = await bidder.evaluate(() => document.querySelector(".card-result").innerText);
-  if (!result.includes("1,000 NTU")) throw new Error(`Unexpected result card:\n${result}`);
+  if (!result.includes("1,000 TIM")) throw new Error(`Unexpected result card:\n${result}`);
   await bidder.screenshot({ path: path.join(OUT, "3-settled-desktop.png"), fullPage: true });
   await bidder.setViewport({ width: 390, height: 844 });
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -161,7 +161,7 @@ try {
   if (await bidder.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) {
     throw new Error("Page scrolls horizontally at 390px wide");
   }
-  step("result card shows 1,000 NTU sold; no horizontal scroll on mobile");
+  step("result card shows 1,000 TIM sold; no horizontal scroll on mobile");
 
   if (problems.length) throw new Error(`Console errors:\n${problems.join("\n")}`);
   console.log(`Passed. Screenshots in ${OUT}`);

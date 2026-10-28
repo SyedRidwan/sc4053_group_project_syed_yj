@@ -5,20 +5,20 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 // Ported from test/AuctionToken.ts on the dutch-auction-token-launch branch (commit 792b50d)
 
 const E = ethers.parseEther;
-const TOTAL_SUPPLY = E("1000"); // 1,000 NTU
+const TOTAL_SUPPLY = E("1000"); // 1,000 TIM
 
 async function deployFixture() {
   const [deployer, other] = await ethers.getSigners();
-  const token = await ethers.deployContract("NTUToken", ["NTU Launch Token", "NTU", TOTAL_SUPPLY]);
+  const token = await ethers.deployContract("HortonsToken", ["Horton's", "TIM", TOTAL_SUPPLY]);
   return { token, deployer, other };
 }
 
-describe("NTUToken", function () {
+describe("HortonsToken", function () {
   it("has the configured name and symbol, and 18 decimals", async function () {
     const { token } = await loadFixture(deployFixture);
 
-    expect(await token.name()).to.equal("NTU Launch Token");
-    expect(await token.symbol()).to.equal("NTU");
+    expect(await token.name()).to.equal("Horton's");
+    expect(await token.symbol()).to.equal("TIM");
     expect(await token.decimals()).to.equal(18n);
   });
 

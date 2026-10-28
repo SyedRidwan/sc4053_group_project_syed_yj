@@ -1,4 +1,4 @@
-import { formatEth, formatNtu } from "../lib/format";
+import { formatEth, formatTim } from "../lib/format";
 import { Card, Row, type AuctionView } from "./ui";
 
 export function ResultCard({ snapshot }: AuctionView) {
@@ -7,10 +7,10 @@ export function ResultCard({ snapshot }: AuctionView) {
 
   return (
     <Card className="card-result" title="Result" tone="accent">
-      <Row label="Clearing price">{formatEth(clearingPrice)} per NTU</Row>
-      <Row label="Tokens sold">{formatNtu(tokensSold)}</Row>
-      <Row label="Tokens burned">{formatNtu(burned)}</Row>
-      <Row label="NTU total supply">{formatNtu(tokenSupply)}</Row>
+      <Row label="Clearing price">{formatEth(clearingPrice)} per TIM</Row>
+      <Row label="Tokens sold">{formatTim(tokensSold)}</Row>
+      <Row label="Tokens burned">{formatTim(burned)}</Row>
+      <Row label="TIM total supply">{formatTim(tokenSupply)}</Row>
       <Row label="ETH raised">{formatEth(totalCommitted)}</Row>
     </Card>
   );

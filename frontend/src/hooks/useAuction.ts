@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import { usePublicClient } from "wagmi";
-import { dutchAuctionAbi, ntuTokenAbi } from "../abi";
+import { dutchAuctionAbi, hortonsTokenAbi } from "../abi";
 import type { Deployment } from "../deployments";
 import type { AuctionParams } from "../lib/auction";
 import type { ChainId } from "../wagmi";
@@ -46,7 +46,7 @@ export function useAuction(deployment: Deployment, account?: Address) {
     queryFn: async (): Promise<AuctionSnapshot> => {
       if (!client) throw new Error("No RPC client for this network");
       const auction = { address: deployment.auction.address, abi: dutchAuctionAbi } as const;
-      const token = { address: deployment.token.address, abi: ntuTokenAbi } as const;
+      const token = { address: deployment.token.address, abi: hortonsTokenAbi } as const;
 
       // A pending block carries the timestamp the next transaction will see. On a local
       // chain that has been fast-forwarded, the latest block's timestamp can lag far behind.

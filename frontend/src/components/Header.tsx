@@ -12,7 +12,7 @@ export function Header() {
       <div className="brand">
         <span className="brand-mark" aria-hidden="true" />
         <div>
-          <h1 className="brand-title">NTU Token Launch</h1>
+          <h1 className="brand-title">Horton's Token Launch</h1>
           <p className="brand-sub">Uniform-price Dutch auction</p>
         </div>
       </div>

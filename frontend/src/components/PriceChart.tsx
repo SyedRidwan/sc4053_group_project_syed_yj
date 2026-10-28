@@ -99,7 +99,7 @@ export function PriceChart({ view, events }: { view: AuctionView; events: Auctio
               transform={`rotate(-90 14 ${pad.top + box.plotH / 2})`}
               textAnchor="middle"
             >
-              ETH per NTU
+              ETH per TIM
             </text>
           )}
 
@@ -170,7 +170,7 @@ export function PriceChart({ view, events }: { view: AuctionView; events: Auctio
         </svg>
       </div>
       <p className="caption">
-        {compact && "Prices in ETH per NTU. "}The price falls in a straight line for 20 minutes. The dashed line is the
+        {compact && "Prices in ETH per TIM. "}The price falls in a straight line for 20 minutes. The dashed line is the
         price at which the ETH committed so far would buy every token; the auction sells out where the two meet, and
         everyone pays that price.
       </p>

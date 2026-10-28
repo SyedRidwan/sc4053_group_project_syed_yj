@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Address } from "viem";
 import type { AuctionEvent } from "../hooks/useAuction";
-import { formatEth, formatNtu, shortAddress } from "../lib/format";
+import { formatEth, formatTim, shortAddress } from "../lib/format";
 import { Card, ExplorerLink } from "./ui";
 
 const MAX_ITEMS = 25;
@@ -31,8 +31,8 @@ function describe(event: AuctionEvent, account?: Address): { kind: string; text:
         kind: "settle",
         text: (
           <>
-            Settled at {formatEth(event.args.clearingPrice)} · {formatNtu(event.args.tokensSold)} sold ·{" "}
-            {formatNtu(event.args.tokensBurned)} burned
+            Settled at {formatEth(event.args.clearingPrice)} · {formatTim(event.args.tokensSold)} sold ·{" "}
+            {formatTim(event.args.tokensBurned)} burned
           </>
         ),
       };
@@ -41,7 +41,7 @@ function describe(event: AuctionEvent, account?: Address): { kind: string; text:
         kind: "claim",
         text: (
           <>
-            <Who address={event.args.bidder} account={account} /> claimed {formatNtu(event.args.amount)}
+            <Who address={event.args.bidder} account={account} /> claimed {formatTim(event.args.amount)}
           </>
         ),
       };

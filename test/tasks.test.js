@@ -19,7 +19,7 @@ async function deployedContracts() {
   const deployment = loadDeployment(hre);
   return {
     deployment,
-    token: await hre.ethers.getContractAt("NTUToken", deployment.token.address),
+    token: await hre.ethers.getContractAt("HortonsToken", deployment.token.address),
     auction: await hre.ethers.getContractAt("DutchAuction", deployment.auction.address),
   };
 }

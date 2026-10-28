@@ -43,7 +43,7 @@ describe("previewBid", () => {
 });
 
 describe("sell-out timing", () => {
-  it("48 ETH sells out 1,000 NTU when the price reaches 0.048 ETH, at t = 780 s", () => {
+  it("48 ETH sells out 1,000 TIM when the price reaches 0.048 ETH, at t = 780 s", () => {
     expect(sellOutOffset(params, parseEther("48"))).toBe(780n);
     expect(ethToSellOut(params, priceAt(params, start, start + 780n))).toBe(parseEther("48"));
   });

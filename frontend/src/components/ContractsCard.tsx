@@ -9,7 +9,7 @@ export function ContractsCard({ deployment, account }: AuctionView) {
       <Row label="Auction">
         <ExplorerLink chainId={deployment.chainId} kind="address" value={deployment.auction.address} />
       </Row>
-      <Row label="NTU token">
+      <Row label="TIM token">
         <ExplorerLink chainId={deployment.chainId} kind="address" value={deployment.token.address} />
       </Row>
       <Row label="Seller">
@@ -20,10 +20,10 @@ export function ContractsCard({ deployment, account }: AuctionView) {
           className="button button-ghost"
           type="button"
           onClick={() =>
-            watchAsset({ type: "ERC20", options: { address: deployment.token.address, symbol: "NTU", decimals: 18 } })
+            watchAsset({ type: "ERC20", options: { address: deployment.token.address, symbol: "TIM", decimals: 18 } })
           }
         >
-          Add NTU to wallet
+          Add TIM to wallet
         </button>
       )}
     </Card>
