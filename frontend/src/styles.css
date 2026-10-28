@@ -180,6 +180,13 @@ pre {
 .stat-sub {
   color: var(--muted);
   font-size: 0.82rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The live sub-lines change length every second; reserve two lines so wrapping never resizes the card */
+.stat-wide .stat-sub {
+  min-height: 2.8em;
 }
 
 .stat-outlook {
