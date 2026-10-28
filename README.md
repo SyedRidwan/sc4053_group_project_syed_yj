@@ -20,10 +20,10 @@ The full rules, mapped clause by clause to the project brief, are in [spec.md](s
 | Path | Contents |
 | --- | --- |
 | `contracts/` | `DutchAuction.sol`, `NTUToken.sol`, and the test-only `ReentrancyAttacker.sol` |
-| `test/` | Contract tests (unit, reentrancy, seeded random invariants) and tests for the CLI tasks |
+| `test/` | Auction and token tests (unit, reentrancy, seeded random invariants) and tests for the CLI tasks |
 | `tasks/auction.js` | Hardhat tasks to deploy and operate the auction, locally or on Sepolia |
 | `frontend/` | React web app (Vite, wagmi, viem, RainbowKit), its unit tests and an end-to-end UI test |
-| `deployments/` | Addresses and ABIs per network, written by `auction:deploy` (`sepolia.json` is committed) |
+| `deployments/` | Addresses and ABIs per network, written by `auction:deploy` (`sepolia.json` is committed once deployed) |
 | `audit/` | AI Audit Report material: evidence logs, the AI issue log, the issues report |
 | `prompts/` | Prompt logs for each AI-assisted session |
 
@@ -33,7 +33,7 @@ Requires Node.js (tested on 24.11.0) and npm. Slither is optional, for static an
 
 ```bash
 npm install
-npm test            # 34 tests
+npm test            # 39 tests
 npm run coverage    # DutchAuction.sol: 100% lines, 97% branches
 npm run slither     # needs Slither installed (pip install slither-analyzer)
 ```
@@ -156,3 +156,7 @@ frontend and the audit report refer to.
 v1 (commits `138f1ce` to `ef71e56`) was written by hand before any AI tool was used. Later work was AI-assisted
 with Claude Code. See `audit/ai-issues.md` for the AI's mistakes, `audit/evidence/` for test, coverage and
 Slither logs, and `prompts/` for the prompt logs.
+
+The second implementation in this repository, on the `dutch-auction-token-launch` branch, allocated tokens at each bid's own
+price. `audit/evidence/2026-10-28-branch-comparison.md` compares the two designs on the same bids and lists what this
+branch took from it.

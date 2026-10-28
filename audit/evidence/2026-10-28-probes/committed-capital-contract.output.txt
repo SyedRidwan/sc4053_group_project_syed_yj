@@ -1,0 +1,6 @@
+Compiled 16 Solidity files successfully (evm target: paris).
+  PROBE committed-capital contract
+finalized in Bob's tx: true
+clearing 0.6 | seller gets 600.0 | supply left 1000.0 | Alice NTU 666.666666666666666666 | Bob NTU 333.333333333333333333
+    ✔ P1 strong demand: Alice 400 ETH at t=300, Bob 200 ETH at t=600 (1425ms)
+  1 passing (1s)

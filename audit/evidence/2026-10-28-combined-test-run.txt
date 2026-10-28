@@ -1,0 +1,58 @@
+
+
+  DutchAuction
+    Deployment and start
+      ✔ rejects invalid constructor parameters (1408ms)
+      ✔ does not accept bids before start, and quotes the start price (44ms)
+      ✔ start() pulls the full sale supply and opens a 20-minute window (48ms)
+      ✔ start() is seller-only, single-use and requires token approval
+    Price decay
+      ✔ decays linearly with no truncation drift (89ms)
+      ✔ never increases and never drops below the reserve price (42ms)
+    Bidding and clearing
+      ✔ records committed ETH without fixing a per-bid price
+      ✔ rejects zero bids and bids after the window closes
+      ✔ clears the moment committed capital meets total supply (brief: uniform clearing price) (54ms)
+      ✔ caps a bid that bridges the threshold and refunds its surplus in the same transaction (73ms)
+      ✔ charges every winning bidder the same clearing price (38ms)
+      ✔ sells out on committed capital where per-bid allocation would settle at the reserve (51ms)
+    Expiry and burning
+      ✔ settles at the reserve price and burns unsold tokens from totalSupply
+      ✔ burns the whole supply when nobody bids
+    Claims
+      ✔ finalizes automatically on the first claim after expiry
+      ✔ rejects early, repeated and empty claims (99ms)
+      ✔ never pays out more than tokensSold when the clearing price rounds down
+    Seller proceeds
+      ✔ pays the seller exactly the committed ETH, once, without touching bidders' tokens (58ms)
+    Security: reentrancy (bonus)
+      ✔ blocks every re-entry from the refund callback and pays only the fair share (145ms)
+      ✔ reverts the whole bid when a bidder rejects its refund, leaving state unchanged
+    Invariants (seeded random auctions)
+      ✔ holds all spec invariants for seed 1 (85ms)
+      ✔ holds all spec invariants for seed 2 (100ms)
+      ✔ holds all spec invariants for seed 3 (88ms)
+      ✔ holds all spec invariants for seed 4 (108ms)
+      ✔ holds all spec invariants for seed 5 (64ms)
+      ✔ holds all spec invariants for seed 6 (141ms)
+      ✔ holds all spec invariants for seed 7 (70ms)
+      ✔ holds all spec invariants for seed 8 (111ms)
+      ✔ holds all spec invariants for seed 9 (66ms)
+      ✔ holds all spec invariants for seed 10 (106ms)
+
+  NTUToken
+    ✔ has the configured name and symbol, and 18 decimals (72ms)
+    ✔ mints the whole initial supply to the deployer, once
+    ✔ permanently reduces totalSupply when a holder burns
+    ✔ does not let anyone burn tokens they neither hold nor were approved for
+
+  Hardhat auction tasks
+    ✔ auction:deploy records addresses, parameters and ABIs for the frontend (1959ms)
+    ✔ auction:demo --scenario soldout settles at 0.06 ETH and pays everyone (662ms)
+    ✔ auction:demo --scenario expiry settles at the reserve and burns the rest (557ms)
+    ✔ auction:demo --scenario live leaves an active auction with 25 ETH committed (568ms)
+    ✔ rejects unknown scenarios
+
+
+  39 passing (7s)
+

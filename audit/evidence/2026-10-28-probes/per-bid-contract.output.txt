@@ -1,0 +1,11 @@
+Running node:test tests
+soldOut after 600 ETH at P=0.6: false
+clearing 0.2 | seller proceeds 166.666666666666666666 | supply left 833.333333333333333333 | contract ETH dust (wei) 0n
+  PROBE yj contract
+    ✔ P1 strong demand that never fills by quantity (4541ms)
+seller blocked until Alice claims: confirmed
+    ✔ P2 seller cannot withdraw while bidders have not claimed
+unfunded bid accepted; ETH held: 100
+finalize and claim both revert: Alice's 100 ETH is locked
+    ✔ P3 unfunded auction accepts bids, then cannot settle
+  3 passing (6522ms)

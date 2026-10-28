@@ -4,6 +4,8 @@
 > (session 01, see `prompts/`) from the brief and v1. v1 allocated tokens at each bid's own price. That contradicts the brief's clearing rule
 > ("when total committed capital meets total token supply, the auction clears") and underpaid the seller by 17%
 > in our own test scenario. v2 follows the brief's wording clause by clause. See `audit/evidence/` for the v1 failures.
+> The second implementation in this repository (`dutch-auction-token-launch`) used the same per-bid rule; on the same bids it
+> settled at the reserve where v2 sells out at three times that price (`audit/evidence/2026-10-28-branch-comparison.md`).
 
 ## 1. System Scope
 Ethereum token launch where tokens are bid for with Ether and distributed by a uniform clearing price Dutch auction
