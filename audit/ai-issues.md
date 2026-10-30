@@ -34,6 +34,8 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 | AI-20 | Prototype factory's parameter bounds allowed a nearly flat curve, instant dust sell-outs and a 1 wei reserve | High | 04 | Fixed |
 | AI-21 | Prototype's seller forward had no `nonReentrant`, against the project's own spec | Medium | 04 | Fixed |
 | AI-22 | Wrote tests that could not fail: a swallowed assertion and two tests blind to their own mutation | Medium | 04 | Fixed |
+| AI-23 | First launchpad UI looked generic, which the operator had to point out; tests cannot judge this | Medium | 04 | Fixed |
+| AI-24 | Hidden tooltips made the listing page scroll sideways on phones | Low | 04 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -302,3 +304,24 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 - **How it was fixed:** the AI caught the first two on self-review, before running them, and rewrote them with exact
   values. Mutation testing caught the third (M13).
 - **Evidence:** `test/LaunchFactory.test.js`, `evidence/2026-10-30-launchpad-mutations.txt`.
+
+## AI-23: A generic-looking interface
+
+- **Why the AI made the mistake:** it reused the first version's card layout and dark blue-to-purple gradient, and judged the
+  result by whether tests passed and pages looked tidy. It called its own screenshots "clean" without asking whether they
+  looked distinctive.
+- **Why it is problematic:** the rubric's top band asks for "sleek UX". Functional tests cannot measure this, so the AI's
+  passing results gave no warning.
+- **How it was fixed:** the operator called it "very basic and AI-generated" and asked for a dynamic, less boxed design with a
+  light theme. The redesign uses hairlines instead of boxes, a warm palette, new typefaces, a live price chart and a ticker.
+- **Evidence:** `evidence/2026-10-30-ui/`, compared with the earlier `evidence/2026-10-23-ui/`. Whether it succeeds is the
+  team's judgement, not a test result.
+
+## AI-24: Hidden tooltips widened the page
+
+- **Why the AI made the mistake:** it hid glossary tooltips with `visibility: hidden`, which keeps an element's size, so tips
+  near the right edge still extended the page. It had looked at the layout at desktop width only.
+- **Why it is problematic:** the listing page scrolled sideways on phones (415 px of content at 390 px wide).
+- **How it was fixed:** the end-to-end test's width check failed, and a script listed the overflowing elements. Hidden tips now
+  use `display: none`, and on phones they show as a bar along the bottom of the screen.
+- **Evidence:** `frontend/e2e/lifecycle.mjs` ("no horizontal scroll on any page at 390px").

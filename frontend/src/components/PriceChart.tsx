@@ -106,6 +106,9 @@ export function PriceChart({ view, events }: { view: AuctionView; events: Auctio
           {/* Schedule: the elapsed part solid, the rest dashed */}
           <line className="chart-future" x1={x(0)} y1={y(params.startPrice)} x2={x(SECONDS)} y2={y(params.reservePrice)} />
           {elapsedEnd > 0 && (
+            <polygon className="chart-area" points={`${x(0)},${y(params.startPrice)} ${x(elapsedEnd)},${y(elapsedPrice)} ${x(elapsedEnd)},${H - pad.bottom} ${x(0)},${H - pad.bottom}`} />
+          )}
+          {elapsedEnd > 0 && (
             <line className="chart-elapsed" x1={x(0)} y1={y(params.startPrice)} x2={x(elapsedEnd)} y2={y(elapsedPrice)} />
           )}
 

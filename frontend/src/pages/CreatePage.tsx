@@ -3,6 +3,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { parseEventLogs } from "viem";
 import { useWriteContract } from "wagmi";
 import { launchFactoryAbi } from "../abi";
+import { Curve } from "../components/Curve";
 import { Card, Row, TxStatusLine } from "../components/ui";
 import type { Deployment } from "../deployments";
 import { useTx } from "../hooks/useTx";
@@ -92,15 +93,11 @@ export function CreatePage({ deployment, account }: { deployment: Deployment; ac
   }
 
   return (
-    <>
-      <div className="page-title">
-        <div className="page-heading">
-          <h2>Launch a token</h2>
-        </div>
-        <p className="muted">
-          One transaction creates your ERC20 token and its auction, and starts the clock. Your wallet becomes the seller.
-        </p>
-      </div>
+    <div className="page">
+      <header className="section-head">
+        <h2>Launch a token</h2>
+        <p className="muted">One transaction creates your ERC20 token and its auction, and starts the clock. Your wallet becomes the seller.</p>
+      </header>
 
       <div className="layout">
         <div className="layout-main">
@@ -137,6 +134,7 @@ export function CreatePage({ deployment, account }: { deployment: Deployment; ac
           <Card title="What will happen" tone={input ? "accent" : undefined}>
             {input ? (
               <>
+                <Curve params={{ totalTokens: input.supply, startPrice: input.startPrice, reservePrice: input.reservePrice }} elapsed={0n} totalCommitted={0n} live={false} />
                 <Row label="Token">
                   {input.name} ({input.symbol})
                 </Row>
@@ -168,6 +166,6 @@ export function CreatePage({ deployment, account }: { deployment: Deployment; ac
           </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 }

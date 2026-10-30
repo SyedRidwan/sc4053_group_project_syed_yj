@@ -71,11 +71,16 @@ The curator **cannot** touch funds, prices or running auctions, and a hidden auc
 
 ### Pages
 
-- **Market:** every listing, with its live price, countdown and progress.
-- **Listing:** a price chart with bids and the sell-out point, a bid form that previews your refund, your position,
-  settle and claim, and an activity feed.
+- **Market:** a live chart of every coin's falling price, a price ticker, search, sorting and filters.
+- **Listing:** a price chart with bids and the sell-out point, a bid form that previews your refund, your position, and
+  an "Under the hood" panel showing the contract's sums with live numbers.
+- **Portfolio:** a live tracker for every coin you've bid on, launched or starred, with your projected outcome. You can bid,
+  settle, claim and withdraw from there.
 - **Launch a token:** a form that checks your values and previews the launch before your wallet opens.
-- **Portfolio:** your bids, your listings and your tokens, across every listing.
+- **How it works:** an interactive auction simulator, the contract design, the safety measures and common questions.
+
+Claiming also asks your wallet to add the token. A wallet always asks its owner to approve this, and no site can skip it.
+The site has light and dark themes, and starts with your system's preference.
 
 ## Repository layout
 
@@ -97,14 +102,15 @@ The curator **cannot** touch funds, prices or running auctions, and a hidden auc
 npm test                            # 81 contract tests
 npm run coverage                    # 100% lines; 98% branches
 npm run slither                     # needs Slither (pip install slither-analyzer)
-npm --prefix frontend test          # 29 frontend unit tests
+npm --prefix frontend test          # 36 frontend unit tests
 npm --prefix frontend run build     # type check and production build
 npm --prefix frontend run e2e       # the whole site in a headless browser
 ```
 
 The end-to-end test needs a chain and the site running (`npm run node` and `npm run frontend` in two terminals). It
-launches two tokens through the form with an injected test wallet, then covers a sell-out with a refund, an expiry with a
-burn, claims, withdrawal, the portfolio, the curator, and mobile layouts.
+launches three tokens through the form with an injected test wallet, then covers a sell-out with a refund, an expiry with a
+burn, claims and the wallet request that follows, withdrawal, the live portfolio, the curator, the simulator, the theme, and
+mobile layouts.
 
 `.github/workflows/ci.yml` runs contract tests and coverage, Slither (failing on any high-severity finding), frontend
 tests and build, and the end-to-end test on every push.

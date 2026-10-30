@@ -116,9 +116,9 @@ drain and reentrancy. See `2026-10-22-issues-report.md` and `evidence/2026-10-22
 | Coverage | `LaunchFactory.sol` 100% lines and branches; `DutchAuction.sol` 100% lines, 96.97% branches | `evidence/2026-10-30-launchpad-coverage.txt` |
 | Slither | 30 results, none high severity, all triaged | `evidence/2026-10-30-launchpad-slither.txt`, triage in `evidence/2026-10-30-launchpad-findings.md` |
 | Mutation testing | Auction: 9 of 9 caught, one only after adding a test (AI-1). Factory: 14 of 14, two only after adding tests (AI-21, AI-22) | `evidence/2026-10-22-findings.md`, `evidence/2026-10-30-launchpad-mutations.txt` |
-| Frontend unit tests | 29 passing, with form validation matched to the contract's bounds | `frontend/src/lib/` |
+| Frontend unit tests | 36 passing, with form validation matched to the contract's bounds | `frontend/src/lib/` |
 | Differential testing of the two branches | Probes P1 to P3 | `evidence/2026-10-28-probes/` |
-| End-to-end test through the real UI | 14 steps across two listings and three wallets, with an injected test wallet | `frontend/e2e/lifecycle.mjs`, `evidence/2026-10-30-launchpad-e2e.txt`, `evidence/2026-10-30-ui/` |
+| End-to-end test through the real UI | 17 steps across three listings and three wallets, with an injected test wallet | `frontend/e2e/lifecycle.mjs`, `evidence/2026-10-30-launchpad-e2e.txt`, `evidence/2026-10-30-ui/` |
 | Local deployment with MetaMask | Single-auction site: bids, sell-out with refund, claims (prompt logs, sessions 02 to 04) | **[TEAM]** Confirm the launchpad with real MetaMask; this has not been done |
 
 Slither missed most of v1's serious bugs, which were logic errors, so tests written against the brief's rules did more
@@ -143,6 +143,9 @@ Changes beyond the base AI output, and who originated them:
   website-only demo.
 - **AI, after review:** pro-rata claims (AI-1), and the correction of two spec invariants that were false as written
   (forced ETH and dust bids, spec section 4).
+
+The operator also reviewed the launchpad and required a live portfolio tracker, tokens added to the wallet on claim, more
+explanation for users, and a redesign with a light theme, on the grounds that the first version looked "AI-generated".
 
 The launchpad itself is AI output, so its code belongs in sections 3 to 5, not here. Only the scope decisions above are the
 team's.

@@ -1,20 +1,24 @@
 import { useAccount, useChainId } from "wagmi";
 import { Header } from "./components/Header";
+import { Ticker } from "./components/Ticker";
 import { deployments, type Deployment } from "./deployments";
 import { useLaunches } from "./hooks/useLaunches";
 import { errorMessage } from "./hooks/useTx";
 import { useRoute, type Route } from "./lib/route";
 import { CreatePage } from "./pages/CreatePage";
 import { LaunchPage } from "./pages/LaunchPage";
+import { LearnPage } from "./pages/LearnPage";
 import { MarketPage } from "./pages/MarketPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
 
 function Notice({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="notice">
-      <h2>{title}</h2>
-      {children}
-    </section>
+    <div className="page">
+      <section className="notice">
+        <h2>{title}</h2>
+        {children}
+      </section>
+    </div>
   );
 }
 
@@ -35,10 +39,11 @@ function NoDeployment({ chainId }: { chainId?: number }) {
   );
 }
 
-function Pages({ deployment, route, isCurator }: { deployment: Deployment; route: Route; isCurator: boolean }) {
+function Content({ deployment, route, isCurator }: { deployment: Deployment; route: Route; isCurator: boolean }) {
   const { address: account } = useAccount();
   const launches = useLaunches(deployment);
 
+  if (route.page === "learn") return <LearnPage />;
   if (route.page === "create") return <CreatePage deployment={deployment} account={account} />;
   if (route.page === "not-found") {
     return (
@@ -82,6 +87,12 @@ function Pages({ deployment, route, isCurator }: { deployment: Deployment; route
   return <MarketPage listings={listings} chainTime={chainTime} fetchedAt={fetchedAt} isCurator={isCurator} />;
 }
 
+function LiveTape({ deployment }: { deployment: Deployment }) {
+  const launches = useLaunches(deployment);
+  if (!launches.data) return null;
+  return <Ticker listings={launches.data.listings} chainTime={launches.data.chainTime} fetchedAt={launches.data.fetchedAt} />;
+}
+
 export default function App() {
   const { address, chainId: walletChainId, isConnected } = useAccount();
   const selectedChainId = useChainId();
@@ -93,15 +104,17 @@ export default function App() {
   return (
     <div className="app">
       <Header route={route} isCurator={isCurator} />
+      {deployment && <LiveTape key={deployment.factory.address} deployment={deployment} />}
       <main className="main">
         {deployment ? (
-          <Pages key={deployment.factory.address} deployment={deployment} route={route} isCurator={isCurator} />
+          <Content key={deployment.factory.address} deployment={deployment} route={route} isCurator={isCurator} />
         ) : (
           <NoDeployment chainId={chainId} />
         )}
       </main>
       <footer className="footer">
-        SC4053 Blockchain Technology · Every winning bidder pays the same clearing price; unsold tokens are burned.
+        <span>Horton's. Every winning bidder pays the same clearing price, and unsold tokens are burned.</span>
+        <span>SC4053 Blockchain Technology, running on a local test chain</span>
       </footer>
     </div>
   );

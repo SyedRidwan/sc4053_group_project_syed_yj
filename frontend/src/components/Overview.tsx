@@ -1,15 +1,15 @@
 import { ethToSellOut, impliedPrice, sellOutOffset } from "../lib/auction";
 import { formatCountdown, formatEth, formatToken } from "../lib/format";
-import { PhaseBadge, type AuctionView } from "./ui";
+import { PhaseBadge, Term, type AuctionView } from "./ui";
 
+const URGENT_SECONDS = 60n;
+
+/** The big live numbers at the top of a listing. */
 export function Overview({ listing, snapshot, now, price, phase }: AuctionView) {
   const { params, startTime, endTime, totalCommitted } = snapshot;
   const needed = ethToSellOut(params, price);
   const progress = needed === 0n ? 0 : Math.min(100, Number((totalCommitted * 10000n) / needed) / 100);
-
-  let countdown = "20:00";
-  if (phase === "active") countdown = formatCountdown(endTime - now);
-  else if (phase !== "not-started") countdown = "0:00";
+  const remaining = endTime - now;
 
   // Where the auction is heading if nobody else bids
   let outlook: string;
@@ -22,45 +22,59 @@ export function Overview({ listing, snapshot, now, price, phase }: AuctionView) 
     if (phase === "sold-out") outlook = `Sold out at ${formatEth(impliedPrice(params, totalCommitted))}`;
     else if (offset === null) outlook = `Settles at the ${formatEth(params.reservePrice)} reserve unless more ETH arrives`;
     else {
-      const remaining = startTime + offset - now;
-      outlook = `Sells out in ${formatCountdown(remaining)} at ${formatEth(impliedPrice(params, totalCommitted))} if no one else bids`;
+      outlook = `Sells out in ${formatCountdown(startTime + offset - now)} at ${formatEth(impliedPrice(params, totalCommitted))} if no one else bids`;
     }
   }
 
+  const live = phase === "active";
+
   return (
     <section className="overview" aria-label="Auction overview">
-      <div className="stat">
-        <span className="stat-label">Status</span>
-        <PhaseBadge phase={phase} />
-        <span className="stat-sub">{phase === "active" ? "Bids are open" : "20-minute window"}</span>
+      <div className="overview-figures">
+        <div className="figure figure-price">
+          <span className="figure-label">
+            {phase === "finalized" ? (
+              <Term means="The single price every winning bidder pays, however early they bid.">Clearing price</Term>
+            ) : (
+              <>Price per {listing.symbol}</>
+            )}
+          </span>
+          <span className="figure-value">{formatEth(phase === "finalized" ? snapshot.clearingPrice : price)}</span>
+          <span className="figure-sub">
+            Falling from {formatEth(params.startPrice)} to the{" "}
+            <Term means="The lowest the price can go. If the auction reaches it, it settles there and unsold tokens are burned.">
+              reserve
+            </Term>{" "}
+            of {formatEth(params.reservePrice)}
+          </span>
+        </div>
+        <div className="figure">
+          <span className="figure-label">Time left</span>
+          <span className={`figure-value mono${live && remaining < URGENT_SECONDS ? " figure-urgent" : ""}`}>
+            {live ? formatCountdown(remaining) : "0:00"}
+          </span>
+          <PhaseBadge phase={phase} />
+        </div>
+        <div className="figure">
+          <span className="figure-label">
+            <Term means="ETH that bidders have sent in so far. It buys the whole supply once the falling price meets it.">
+              ETH committed
+            </Term>
+          </span>
+          <span className="figure-value">{formatEth(totalCommitted)}</span>
+          <span className="figure-sub">{outlook}</span>
+        </div>
       </div>
-      <div className="stat">
-        <span className="stat-label">Time left</span>
-        <span className="stat-value mono">{countdown}</span>
-        <span className="stat-sub">Chain time</span>
-      </div>
-      <div className="stat">
-        <span className="stat-label">Price per {listing.symbol}</span>
-        <span className="stat-value">{formatEth(phase === "finalized" ? snapshot.clearingPrice : price)}</span>
-        <span className="stat-sub">
-          {formatEth(params.startPrice)} → {formatEth(params.reservePrice)}
-        </span>
-      </div>
-      <div className="stat stat-wide">
-        <span className="stat-label">ETH committed</span>
-        <span className="stat-value">{formatEth(totalCommitted)}</span>
-        {phase !== "finalized" && phase !== "not-started" && (
-          <>
-            <div className="progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-              <div className="progress-fill" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="stat-sub">
-              {progress.toFixed(1)}% of the {formatEth(needed)} that buys the whole supply now
-            </span>
-          </>
-        )}
-        <span className="stat-sub stat-outlook">{outlook}</span>
-      </div>
+      {live && (
+        <div className="demand">
+          <div className="demand-bar" role="progressbar" aria-label="Share of the ETH needed to sell out" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div className="demand-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <span className="figure-sub">
+            {progress.toFixed(1)}% of the {formatEth(needed)} that buys the whole supply right now
+          </span>
+        </div>
+      )}
     </section>
   );
 }

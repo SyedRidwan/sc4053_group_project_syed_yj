@@ -56,6 +56,7 @@ describe("parseRoute", () => {
     expect(parseRoute("#/")).toEqual({ page: "market" });
     expect(parseRoute("#/create")).toEqual({ page: "create" });
     expect(parseRoute("#/portfolio")).toEqual({ page: "portfolio" });
+    expect(parseRoute("#/learn")).toEqual({ page: "learn" });
     expect(parseRoute("#/launch/12")).toEqual({ page: "launch", id: 12n });
   });
 

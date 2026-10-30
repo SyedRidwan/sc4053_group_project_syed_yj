@@ -44,6 +44,10 @@ function injectWallet(account, rpc) {
       if (method === "wallet_requestPermissions" || method === "wallet_getPermissions") {
         return [{ parentCapability: "eth_accounts" }];
       }
+      if (method === "wallet_watchAsset") {
+        window.watchedAssets = [...(window.watchedAssets ?? []), params.options?.symbol ?? params[0]?.options?.symbol];
+        return true;
+      }
       if (method.startsWith("wallet_")) return null;
       if (method === "eth_sendTransaction") params = [{ ...params[0], from: account }];
       const response = await fetch(rpc, {
@@ -121,8 +125,8 @@ async function openAs(browser, account, label) {
   await page.evaluate(() =>
     [...document.querySelectorAll("[role=dialog] button")].find((b) => b.innerText.trim() === "Browser Wallet").click()
   );
-  // "Your bids" only renders once a wallet is connected
-  await waitText(page, "Your bids");
+  // "Your coins" only renders once a wallet is connected
+  await waitText(page, "Your coins");
   return page;
 }
 
@@ -197,7 +201,10 @@ try {
   await waitText(bidder, "Claim tokens");
   await clickButton(bidder, "Claim tokens");
   await waitText(bidder, "Claim confirmed");
-  step("bidder claimed tokens");
+  await waitText(bidder, "ALP now shows in your wallet");
+  const watched = await bidder.evaluate(() => window.watchedAssets ?? []);
+  if (!watched.includes("ALP")) await fail(bidder, `The wallet was not asked to add ALP: ${watched}`);
+  step("bidder claimed tokens, and the wallet was asked to add them automatically");
 
   await waitText(seller, "Withdraw", 15000);
   await clickButton(seller, "Withdraw");
@@ -235,13 +242,37 @@ try {
 
   await open(bidder, "#/portfolio");
   await waitText(bidder, "Beta Coin");
-  await waitText(bidder, "READY TO CLAIM"); // Uppercased by CSS, and innerText reports it that way
-  await bidder.screenshot({ path: path.join(OUT, "5-portfolio.png"), fullPage: true });
-  const portfolio = await bidder.evaluate(() => document.querySelector(".card-my-bids").innerText);
-  if (!portfolio.includes("Alpha Coin") || !portfolio.includes("Claimed")) {
+  await waitText(bidder, "Ready to claim");
+  const portfolio = await bidder.evaluate(() => document.querySelector(".trackers").innerText);
+  if (!portfolio.includes("Alpha Coin") || !portfolio.includes("Claimed") || !portfolio.includes("Claim tokens")) {
     await fail(bidder, `Portfolio is missing a bid:\n${portfolio}`);
   }
-  step("bidder's portfolio lists bids across both listings");
+  step("bidder's portfolio lists bids across both listings, with claim available in place");
+
+  // A third listing, tracked with a star and bid on without leaving the portfolio
+  await open(seller, "#/create");
+  await fillLaunch(seller, { name: "Gamma Coin", symbol: "GAM", supply: "1000", start: "0.05", reserve: "0.01" });
+  await clickButton(seller, "Launch token and start the auction");
+  await waitText(seller, "Gamma Coin");
+
+  await open(bidder, "#/");
+  await waitText(bidder, "Gamma Coin");
+  await bidder.click("button[aria-label='Track GAM']");
+  await open(bidder, "#/portfolio");
+  await waitText(bidder, "Gamma Coin");
+  await waitText(bidder, "tracking this coin");
+  const tracked = () => bidder.evaluate(() => document.querySelector(".tracker-live .mono").innerText);
+  const before = await tracked();
+  await new Promise((resolve) => setTimeout(resolve, 2200));
+  if ((await tracked()) === before) await fail(bidder, `The tracker countdown did not move from ${before}`);
+  await clickButton(bidder, "Bid");
+  await bidder.locator("#bid-amount-2").fill("3");
+  await waitText(bidder, "You receive at least");
+  await clickButton(bidder, "Place bid");
+  await waitText(bidder, "Bid confirmed");
+  await waitText(bidder, "If no one else bids");
+  await bidder.screenshot({ path: path.join(OUT, "5-portfolio.png"), fullPage: true });
+  step("portfolio tracks a starred coin live, and a bid went through from there");
 
   const curator = await openAs(browser, CURATOR, "curator");
   await waitText(curator, "Curator");
@@ -271,7 +302,8 @@ try {
   for (const [hash, name, wait] of [
     ["#/", "Market", "Alpha Coin"],
     ["#/create", "Create page", "Your token"],
-    ["#/portfolio", "Portfolio", "Your bids"],
+    ["#/portfolio", "Portfolio", "Your coins"],
+    ["#/learn", "How it works", "Try it"],
   ]) {
     await open(bidder, hash);
     await waitText(bidder, wait);
@@ -282,6 +314,24 @@ try {
   await waitText(bidder, "Alpha Coin");
   await bidder.screenshot({ path: path.join(OUT, "7-market-mobile.png"), fullPage: true });
   step("no horizontal scroll on any page at 390px");
+
+  await bidder.setViewport({ width: 1280, height: 900 });
+  await open(bidder, "#/learn");
+  await waitText(bidder, "Try it");
+  await clickButton(bidder, "Play the auction");
+  await waitText(bidder, "Sold out after");
+  await waitText(bidder, "Paid per token");
+  await bidder.screenshot({ path: path.join(OUT, "8-how-it-works.png"), fullPage: true });
+  step("the How it works simulator plays an auction through to its result");
+
+  const theme = () => bidder.evaluate(() => document.documentElement.dataset.theme);
+  const first = await theme();
+  await bidder.click(".theme-toggle");
+  const second = await theme();
+  if (first === second) await fail(bidder, "The theme toggle did not change the theme");
+  await bidder.reload({ waitUntil: "networkidle2" });
+  if ((await theme()) !== second) await fail(bidder, "The chosen theme did not survive a reload");
+  step("theme toggle works and is remembered");
 
   if (problems.length) throw new Error(`Console errors:\n${problems.join("\n")}`);
   console.log(`Passed. Screenshots in ${OUT}`);

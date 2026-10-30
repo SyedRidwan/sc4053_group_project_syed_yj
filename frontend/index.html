@@ -6,9 +6,20 @@
     <meta name="description" content="A launchpad where every token sells in its own uniform-price Dutch auction" />
     <link
       rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b8cff'/><path d='M8 9 L24 23' stroke='white' stroke-width='3.5' stroke-linecap='round'/></svg>"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c7381a'/><path d='M8 9 L24 23' stroke='white' stroke-width='3.5' stroke-linecap='round'/></svg>"
     />
     <title>Horton's Launchpad</title>
+    <script>
+      // Set before the first paint, so a saved or system theme never flashes the wrong colours
+      (function () {
+        var saved = null;
+        try {
+          saved = localStorage.getItem("theme");
+        } catch (e) {}
+        var dark = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
