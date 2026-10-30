@@ -1,15 +1,14 @@
 import type { ReactNode } from "react";
 import type { Address, Hash } from "viem";
-import type { Deployment } from "../deployments";
-import { explorers } from "../deployments";
 import type { AuctionSnapshot } from "../hooks/useAuction";
+import type { Listing } from "../hooks/useLaunches";
 import type { TxStatus } from "../hooks/useTx";
 import type { Phase } from "../lib/auction";
 import { shortAddress } from "../lib/format";
 
 /** Everything a card needs to render the auction at the current chain second. */
 export interface AuctionView {
-  deployment: Deployment;
+  listing: Listing;
   snapshot: AuctionSnapshot;
   now: bigint;
   price: bigint;
@@ -45,28 +44,12 @@ export function Row({ label, children }: { label: string; children: ReactNode })
   );
 }
 
-export function ExplorerLink({
-  chainId,
-  kind,
-  value,
-  children,
-}: {
-  chainId: number;
-  kind: "tx" | "address";
-  value: Hash | Address;
-  children?: ReactNode;
-}) {
-  const base = explorers[chainId];
-  const label = children ?? shortAddress(value);
-  if (!base) return <span className="mono">{label}</span>;
-  return (
-    <a className="mono" href={`${base}/${kind}/${value}`} target="_blank" rel="noreferrer">
-      {label}
-    </a>
-  );
+/** A shortened address or transaction hash. */
+export function ShortHash({ value, children }: { value: Hash | Address; children?: ReactNode }) {
+  return <span className="mono" title={value}>{children ?? shortAddress(value)}</span>;
 }
 
-export function TxStatusLine({ status, chainId }: { status: TxStatus; chainId: number }) {
+export function TxStatusLine({ status }: { status: TxStatus }) {
   switch (status.state) {
     case "idle":
       return null;
@@ -75,13 +58,13 @@ export function TxStatusLine({ status, chainId }: { status: TxStatus; chainId: n
     case "confirming":
       return (
         <p className="tx tx-pending">
-          Waiting for confirmation… <ExplorerLink chainId={chainId} kind="tx" value={status.hash} />
+          Waiting for confirmation… <ShortHash value={status.hash} />
         </p>
       );
     case "success":
       return (
         <p className="tx tx-success">
-          {status.label} confirmed <ExplorerLink chainId={chainId} kind="tx" value={status.hash} />
+          {status.label} confirmed <ShortHash value={status.hash} />
         </p>
       );
     case "error":
@@ -103,4 +86,20 @@ const PHASE_LABELS: Record<Phase, string> = {
 
 export function PhaseBadge({ phase }: { phase: Phase }) {
   return <span className={`badge badge-${phase}`}>{PHASE_LABELS[phase]}</span>;
+}
+
+export function VerifiedBadge() {
+  return (
+    <span className="tag tag-verified" title="Reviewed by the curator. This says nothing about the token's value.">
+      Verified
+    </span>
+  );
+}
+
+export function HiddenBadge() {
+  return (
+    <span className="tag tag-hidden" title="Hidden from the market by the curator. The auction keeps running.">
+      Hidden
+    </span>
+  );
 }

@@ -11,8 +11,8 @@ export function formatEth(value: bigint, digits = 6): string {
   return `${formatUnits18(value, digits)} ETH`;
 }
 
-export function formatTim(value: bigint, digits = 6): string {
-  return `${formatUnits18(value, digits)} TIM`;
+export function formatToken(value: bigint, symbol: string, digits = 6): string {
+  return `${formatUnits18(value, digits)} ${symbol}`;
 }
 
 export function shortAddress(address: string): string {

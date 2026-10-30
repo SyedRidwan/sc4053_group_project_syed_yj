@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { BaseError, ContractFunctionRevertedError, UserRejectedRequestError, type Hash } from "viem";
+import { BaseError, ContractFunctionRevertedError, UserRejectedRequestError, type Hash, type TransactionReceipt } from "viem";
 import { usePublicClient } from "wagmi";
 import type { ChainId } from "../wagmi";
 
@@ -31,7 +31,7 @@ export function useTx(chainId: number) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<TxStatus>({ state: "idle" });
 
-  async function run(label: string, send: () => Promise<Hash>): Promise<boolean> {
+  async function run(label: string, send: () => Promise<Hash>, onSuccess?: (receipt: TransactionReceipt) => void): Promise<boolean> {
     try {
       setStatus({ state: "pending", label });
       const hash = await send();
@@ -43,6 +43,7 @@ export function useTx(chainId: number) {
       // render as the success line, not after input typed in the meantime
       await queryClient.invalidateQueries();
       setStatus({ state: "success", label, hash });
+      onSuccess?.(receipt);
       return true;
     } catch (err) {
       setStatus({ state: "error", label, message: errorMessage(err) });

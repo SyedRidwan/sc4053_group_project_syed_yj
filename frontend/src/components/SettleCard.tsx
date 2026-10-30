@@ -1,14 +1,14 @@
 import { useWriteContract } from "wagmi";
 import { dutchAuctionAbi } from "../abi";
 import { useTx } from "../hooks/useTx";
-import { impliedPrice, TOKEN_UNIT } from "../lib/auction";
-import { formatEth, formatTim } from "../lib/format";
+import { impliedPrice, tokensSoldAt } from "../lib/auction";
+import { formatEth, formatToken } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, TxStatusLine, type AuctionView } from "./ui";
 
 /** Shown once the auction has sold out or expired but nobody has settled it yet. */
-export function SettleCard({ deployment, snapshot, account }: AuctionView) {
-  const chainId = deployment.chainId as ChainId;
+export function SettleCard({ listing, snapshot, account }: AuctionView) {
+  const chainId = listing.chainId as ChainId;
   const { writeContractAsync } = useWriteContract();
   const tx = useTx(chainId);
 
@@ -16,17 +16,15 @@ export function SettleCard({ deployment, snapshot, account }: AuctionView) {
   const { params, totalCommitted } = snapshot;
   const implied = impliedPrice(params, totalCommitted);
   const clearing = implied > params.reservePrice ? implied : params.reservePrice;
-  const sold = (totalCommitted * TOKEN_UNIT) / clearing;
-  const tokensSold = sold < params.totalTokens ? sold : params.totalTokens;
-  const burned = params.totalTokens - tokensSold;
+  const burned = params.totalTokens - tokensSoldAt(params, totalCommitted, clearing);
 
   return (
     <Card className="card-settle" title="Settle the auction" tone="accent">
       <p>
-        Bidding is over. Settling fixes the clearing price at <strong>{formatEth(clearing)}</strong> per TIM
+        Bidding is over. Settling fixes the clearing price at <strong>{formatEth(clearing)}</strong> per {listing.symbol}
         {burned > 0n ? (
           <>
-            {" "}and permanently burns <strong>{formatTim(burned)}</strong> that did not sell.
+            {" "}and permanently burns <strong>{formatToken(burned, listing.symbol)}</strong> that did not sell.
           </>
         ) : (
           "."
@@ -39,13 +37,13 @@ export function SettleCard({ deployment, snapshot, account }: AuctionView) {
         disabled={!account || tx.busy}
         onClick={() =>
           tx.run("Settle", () =>
-            writeContractAsync({ address: deployment.auction.address, abi: dutchAuctionAbi, functionName: "finalize", chainId })
+            writeContractAsync({ address: listing.auction, abi: dutchAuctionAbi, functionName: "finalize", chainId })
           )
         }
       >
         {!account ? "Connect a wallet to settle" : tx.busy ? "Settling…" : "Settle auction"}
       </button>
-      <TxStatusLine status={tx.status} chainId={chainId} />
+      <TxStatusLine status={tx.status} />
     </Card>
   );
 }

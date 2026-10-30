@@ -2,12 +2,12 @@ import { useWriteContract } from "wagmi";
 import { dutchAuctionAbi } from "../abi";
 import { useTx } from "../hooks/useTx";
 import { minTokens, proRataTokens, TOKEN_UNIT } from "../lib/auction";
-import { formatEth, formatTim } from "../lib/format";
+import { formatEth, formatToken } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, Row, TxStatusLine, type AuctionView } from "./ui";
 
-export function PositionCard({ deployment, snapshot, price, phase, account }: AuctionView) {
-  const chainId = deployment.chainId as ChainId;
+export function PositionCard({ listing, snapshot, price, phase, account }: AuctionView) {
+  const chainId = listing.chainId as ChainId;
   const { writeContractAsync } = useWriteContract();
   const tx = useTx(chainId);
 
@@ -47,23 +47,23 @@ export function PositionCard({ deployment, snapshot, price, phase, account }: Au
 
   function claim() {
     return tx.run(phase === "finalized" ? "Claim" : "Settle and claim", () =>
-      writeContractAsync({ address: deployment.auction.address, abi: dutchAuctionAbi, functionName: "claim", chainId })
+      writeContractAsync({ address: listing.auction, abi: dutchAuctionAbi, functionName: "claim", chainId })
     );
   }
 
   return (
     <Card className="card-position" title="Your position">
       <Row label="ETH committed">{formatEth(commitment)}</Row>
-      {commitment > 0n && <Row label={tokensLabel}>{claimed ? "Claimed" : formatTim(tokens)}</Row>}
-      {phase === "finalized" && commitment > 0n && <Row label="Price you paid">{formatEth(snapshot.clearingPrice)} per TIM</Row>}
-      <Row label="TIM in wallet">{formatTim(position.tokenBalance)}</Row>
+      {commitment > 0n && <Row label={tokensLabel}>{claimed ? "Claimed" : formatToken(tokens, listing.symbol)}</Row>}
+      {phase === "finalized" && commitment > 0n && <Row label="Price you paid">{formatEth(snapshot.clearingPrice)} per {listing.symbol}</Row>}
+      <Row label={`${listing.symbol} in wallet`}>{formatToken(position.tokenBalance, listing.symbol)}</Row>
       {commitment === 0n && <p className="muted">You have not bid in this auction.</p>}
       {canClaim && (
         <button className="button button-primary" type="button" onClick={claim} disabled={tx.busy}>
           {tx.busy ? "Claiming…" : phase === "finalized" ? "Claim tokens" : "Settle and claim tokens"}
         </button>
       )}
-      <TxStatusLine status={tx.status} chainId={chainId} />
+      <TxStatusLine status={tx.status} />
     </Card>
   );
 }

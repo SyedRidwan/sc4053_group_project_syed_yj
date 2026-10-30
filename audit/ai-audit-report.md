@@ -10,6 +10,7 @@ Provenance used throughout:
 | v1: `spec.md`, contracts, tests (commits `138f1ce`, `5f6a2c4`, `ef71e56`) | Written by hand, before any AI tool | Team statement, `prompts/2026-10-22-session-01.md` |
 | v2 onwards, on `feat/v2-committed-capital`, then `soln-combined` | Claude Code, directed by the operator | `prompts/` |
 | `dutch-auction-token-launch` branch (commit `792b50d`) | An AI tool; which one is not recorded | Team statement, `ai-issues.md` |
+| Launchpad: `LaunchFactory.sol`, the Market, Create and Portfolio pages, seed and demo tooling | Claude Code, directed by the operator | `prompts/2026-10-30-session-04.md` |
 
 ## 1. Initial Specification & System Scope
 
@@ -76,6 +77,16 @@ The AI's v2 design replaced v1's per-bid allocation:
 - **Frontend:** a read-only snapshot hook polled every 4 seconds, client-side copies of the price maths for per-second
   updates, and one card component per concern.
 
+The AI's launchpad design (session 04) wraps that auction without changing it:
+
+- **`LaunchFactory`:** `createLaunch` deploys a token and an auction with `new`, then starts the auction. Because the
+  auction sets `seller = msg.sender`, the factory is the on-chain seller, and `withdrawProceeds(id)` forwards to the
+  registered seller.
+- **Design choice:** the AI built and measured two versions. EIP-1167 clones made each launch 3.4 times cheaper in gas, but
+  needed 35 added and 7 removed lines in the audited auction, plus a new token. It chose plain `new`, which changes neither.
+- **Registry:** paged views return one row per listing, so the site has no backend or event indexer.
+- **Roles:** derived from the wallet and chain data, with no accounts or login.
+
 ## 5. Problems Discovered & Vulnerability Analysis
 
 The full inventory, each entry in the brief's 4-part format, is in [`ai-issues.md`](ai-issues.md). Most significant:
@@ -89,6 +100,10 @@ The full inventory, each entry in the brief's 4-part format, is in [`ai-issues.m
 | AI-12: clock starts before funding | ETH locked permanently (probe P3) | Not carried over |
 | AI-13: proceeds depend on bidders claiming | A non-claiming bidder holds back the seller's ETH | Not carried over |
 | AI-17: race in the transaction hook | Typed input wiped; CI failed intermittently | Fixed |
+| AI-19: wrong claim from a truncated read of MetaMask's code | Would have ruled out the real cause of a false error | Fixed by an adversarial agent |
+| AI-20: weak factory bounds in the prototype | A nearly flat "descending" price, and instant dust sell-outs | Fixed before reaching the repository |
+| AI-21: no reentrancy guard on the seller forward | Broke the project's own spec | Fixed, test added |
+| AI-22: tests that could not fail | False confidence, repeating AI-7 | Fixed, mutations added |
 
 **Review of the hand-written v1 (a human baseline, not AI mistakes):** 13 issues, including double refunds, a seller
 drain and reentrancy. See `2026-10-22-issues-report.md` and `evidence/2026-10-22-findings.md`.
@@ -97,19 +112,23 @@ drain and reentrancy. See `2026-10-22-issues-report.md` and `evidence/2026-10-22
 
 | Method | Result | Evidence |
 | --- | --- | --- |
-| Unit, event, revert, reentrancy and seeded-random invariant tests | 39 passing | `evidence/2026-10-30-test-run.txt` |
-| Coverage of the auction | `DutchAuction.sol` 100% lines, 96.97% branches | `evidence/2026-10-30-coverage.txt` |
-| Slither | 15 results; none in the auction beyond those triaged | `evidence/2026-10-30-slither.txt`, triage in `evidence/2026-10-22-findings.md` |
-| Mutation testing | 9 of 9 caught, one only after adding a test (AI-1) | `evidence/2026-10-22-findings.md` |
+| Unit, event, revert, reentrancy, isolation and seeded-random invariant tests | 81 passing, including the original 39 unchanged | `evidence/2026-10-30-launchpad-test-run.txt` |
+| Coverage | `LaunchFactory.sol` 100% lines and branches; `DutchAuction.sol` 100% lines, 96.97% branches | `evidence/2026-10-30-launchpad-coverage.txt` |
+| Slither | 30 results, none high severity, all triaged | `evidence/2026-10-30-launchpad-slither.txt`, triage in `evidence/2026-10-30-launchpad-findings.md` |
+| Mutation testing | Auction: 9 of 9 caught, one only after adding a test (AI-1). Factory: 14 of 14, two only after adding tests (AI-21, AI-22) | `evidence/2026-10-22-findings.md`, `evidence/2026-10-30-launchpad-mutations.txt` |
+| Frontend unit tests | 29 passing, with form validation matched to the contract's bounds | `frontend/src/lib/` |
 | Differential testing of the two branches | Probes P1 to P3 | `evidence/2026-10-28-probes/` |
-| End-to-end test through the real UI | Full lifecycle in a headless browser | `frontend/e2e/lifecycle.mjs` |
-| Local deployment with MetaMask | Bids, sell-out with refund, claims | Prompt logs, sessions 02 to 04 |
+| End-to-end test through the real UI | 14 steps across two listings and three wallets, with an injected test wallet | `frontend/e2e/lifecycle.mjs`, `evidence/2026-10-30-launchpad-e2e.txt`, `evidence/2026-10-30-ui/` |
+| Local deployment with MetaMask | Single-auction site: bids, sell-out with refund, claims (prompt logs, sessions 02 to 04) | **[TEAM]** Confirm the launchpad with real MetaMask; this has not been done |
 
 Slither missed most of v1's serious bugs, which were logic errors, so tests written against the brief's rules did more
 than static analysis here.
 
-**Reentrancy (the brief's bonus):** `ReentrancyAttacker.sol` re-enters during the refund. The tests show one attempt, no
-successes, and correct balances.
+**Reentrancy (the brief's bonus):** `ReentrancyAttacker.sol` re-enters during the refund, and `ReentrantSeller` re-enters
+the factory during a withdrawal. The tests show one attempt each, no successes, and correct balances.
+
+**Limit of this evidence:** the MetaMask diagnosis in session 04 rests on reading the extension's code and on the operator's
+report that the error stopped. It was not reproduced end to end in a real extension.
 
 ## 7. Improvements & Refinements
 
@@ -120,8 +139,13 @@ Changes beyond the base AI output, and who originated them:
 - **Operator:** challenged the AI's authorship claim (AI-2).
 - **Operator:** asked to go beyond a single auction to multiple tokens; the AI evaluated this against the rubric and
   narrowed it to a launchpad.
+- **Operator:** chose a local deployment over Sepolia, on the basis of the submission instructions, and required a
+  website-only demo.
 - **AI, after review:** pro-rata claims (AI-1), and the correction of two spec invariants that were false as written
   (forced ETH and dust bids, spec section 4).
+
+The launchpad itself is AI output, so its code belongs in sections 3 to 5, not here. Only the scope decisions above are the
+team's.
 
 **[TEAM]** Any changes the team made by hand, and any manual code review it did.
 

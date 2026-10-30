@@ -18,7 +18,7 @@ const wallets = projectId
   : [metaMaskWallet, injectedWallet];
 
 const connectors = connectorsForWallets([{ groupName: "Wallets", wallets }], {
-  appName: "Horton's Token Launch",
+  appName: "Horton's Launchpad",
   projectId: projectId ?? "browser-extension-only",
 });
 

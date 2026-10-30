@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import type { Address } from "viem";
 import type { AuctionEvent } from "../hooks/useAuction";
-import { formatEth, formatTim, shortAddress } from "../lib/format";
-import { Card, ExplorerLink } from "./ui";
+import { formatEth, formatToken, shortAddress } from "../lib/format";
+import { Card, ShortHash } from "./ui";
 
 const MAX_ITEMS = 25;
 
@@ -11,7 +11,7 @@ function Who({ address, account }: { address: Address; account?: Address }) {
   return <span className={isYou ? "you" : "mono"}>{isYou ? "You" : shortAddress(address)}</span>;
 }
 
-function describe(event: AuctionEvent, account?: Address): { kind: string; text: ReactNode } {
+function describe(event: AuctionEvent, symbol: string, account?: Address): { kind: string; text: ReactNode } {
   switch (event.eventName) {
     case "AuctionStarted":
       return { kind: "start", text: "Auction started" };
@@ -31,8 +31,8 @@ function describe(event: AuctionEvent, account?: Address): { kind: string; text:
         kind: "settle",
         text: (
           <>
-            Settled at {formatEth(event.args.clearingPrice)} · {formatTim(event.args.tokensSold)} sold ·{" "}
-            {formatTim(event.args.tokensBurned)} burned
+            Settled at {formatEth(event.args.clearingPrice)} · {formatToken(event.args.tokensSold, symbol)} sold ·{" "}
+            {formatToken(event.args.tokensBurned, symbol)} burned
           </>
         ),
       };
@@ -41,7 +41,7 @@ function describe(event: AuctionEvent, account?: Address): { kind: string; text:
         kind: "claim",
         text: (
           <>
-            <Who address={event.args.bidder} account={account} /> claimed {formatTim(event.args.amount)}
+            <Who address={event.args.bidder} account={account} /> claimed {formatToken(event.args.amount, symbol)}
           </>
         ),
       };
@@ -51,12 +51,12 @@ function describe(event: AuctionEvent, account?: Address): { kind: string; text:
 }
 
 export function ActivityFeed({
-  chainId,
+  symbol,
   events,
   error,
   account,
 }: {
-  chainId: number;
+  symbol: string;
   events: AuctionEvent[];
   error: Error | null;
   account?: Address;
@@ -69,14 +69,12 @@ export function ActivityFeed({
       {!error && recent.length === 0 && <p className="muted">No activity yet.</p>}
       <ol className="activity">
         {recent.map((event) => {
-          const { kind, text } = describe(event, account);
+          const { kind, text } = describe(event, symbol, account);
           return (
             <li key={`${event.transactionHash}-${event.logIndex}`} className={`activity-item activity-${kind}`}>
               <span className="activity-dot" aria-hidden="true" />
               <span className="activity-text">{text}</span>
-              <ExplorerLink chainId={chainId} kind="tx" value={event.transactionHash}>
-                #{event.blockNumber.toString()}
-              </ExplorerLink>
+              <ShortHash value={event.transactionHash}>#{event.blockNumber.toString()}</ShortHash>
             </li>
           );
         })}

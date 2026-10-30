@@ -11,8 +11,8 @@ const START_TIMEOUT_MS = 60000;
 
 const children = [];
 
-function start(command, args) {
-  const child = spawn(command, args, { cwd: ROOT, shell: true, stdio: ["ignore", "ignore", "inherit"] });
+function start(command) {
+  const child = spawn(command, { cwd: ROOT, shell: true, stdio: ["ignore", "ignore", "inherit"] });
   children.push(child);
   return child;
 }
@@ -20,7 +20,7 @@ function start(command, args) {
 function stopAll() {
   for (const child of children) {
     // A shell owns the real process, so the whole tree has to go on Windows
-    if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore" });
+    if (process.platform === "win32") spawnSync(`taskkill /pid ${child.pid} /t /f`, { shell: true, stdio: "ignore" });
     else child.kill();
   }
 }
@@ -38,30 +38,36 @@ async function chainIsUp() {
   }
 }
 
+// The only option the seed task takes; anything else is ignored rather than passed to a shell
+function seedOptions() {
+  const flag = process.argv.indexOf("--expires-in");
+  const seconds = flag === -1 ? NaN : Number(process.argv[flag + 1]);
+  return Number.isInteger(seconds) ? ` --expires-in ${seconds}` : "";
+}
+
 async function main() {
   if (await chainIsUp()) {
     throw new Error(`Something is already using ${RPC}. Stop it first, because seeding needs a fresh chain.`);
   }
 
-  console.log("Starting the local chain…");
-  start("npx", ["hardhat", "node"]);
+  console.log("Starting the local chain...");
+  start("npx hardhat node");
   const deadline = Date.now() + START_TIMEOUT_MS;
   while (!(await chainIsUp())) {
     if (Date.now() > deadline) throw new Error("The local chain did not start within a minute");
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  console.log("Seeding the market…");
-  const seedArgs = ["hardhat", "launchpad:seed", "--network", "localhost", ...process.argv.slice(2)];
-  const seed = spawnSync("npx", seedArgs, { cwd: ROOT, shell: true, stdio: "inherit" });
+  console.log("Seeding the market...");
+  const seed = spawnSync(`npx hardhat launchpad:seed --network localhost${seedOptions()}`, { cwd: ROOT, shell: true, stdio: "inherit" });
   if (seed.status !== 0) throw new Error("Seeding failed");
 
-  console.log("Starting the site…");
-  start("npm", ["--prefix", "frontend", "run", "dev", "--", "--port", "5173", "--strictPort"]);
+  console.log("Starting the site...");
+  start("npm --prefix frontend run dev -- --port 5173 --strictPort");
 
   console.log(`\nReady: ${APP}`);
-  console.log("Add the local network to MetaMask (RPC http://127.0.0.1:8545, chain ID 31337) and import test accounts");
-  console.log("from the README. Then run \"Clear activity and nonce data\" for each one before sending anything.");
+  console.log("In MetaMask, add the local network (RPC http://127.0.0.1:8545, chain ID 31337) and import the test accounts");
+  console.log('in the README. Then run "Clear activity and nonce data" for each one before sending anything.');
   console.log("Press Ctrl+C to stop.\n");
 }
 

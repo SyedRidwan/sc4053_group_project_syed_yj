@@ -6,7 +6,7 @@ import { dutchAuctionAbi } from "../abi";
 import { REFRESH_MS } from "../hooks/useAuction";
 import { useTx } from "../hooks/useTx";
 import { minTokens, previewBid } from "../lib/auction";
-import { formatEth, formatTim } from "../lib/format";
+import { formatEth, formatToken } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Card, Row, TxStatusLine, type AuctionView } from "./ui";
 
@@ -18,8 +18,8 @@ function parseAmount(input: string): bigint | null {
   }
 }
 
-export function BidCard({ deployment, snapshot, price, phase, account }: AuctionView) {
-  const chainId = deployment.chainId as ChainId;
+export function BidCard({ listing, snapshot, price, phase, account }: AuctionView) {
+  const chainId = listing.chainId as ChainId;
   const [amount, setAmount] = useState("");
   const { openConnectModal } = useConnectModal();
   const { writeContractAsync } = useWriteContract();
@@ -47,7 +47,7 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
     if (value === null || value <= 0n || dust) return;
     const ok = await tx.run("Bid", () =>
       writeContractAsync({
-        address: deployment.auction.address,
+        address: listing.auction,
         abi: dutchAuctionAbi,
         functionName: "bid",
         value,
@@ -63,7 +63,7 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
     return (
       <Card className="card-bid" title="Place a bid">
         <p className="muted">{reason}</p>
-        <TxStatusLine status={tx.status} chainId={chainId} />
+        <TxStatusLine status={tx.status} />
       </Card>
     );
   }
@@ -102,10 +102,10 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
           <div className="preview">
             <Row label="Accepted">{formatEth(preview.accepted)}</Row>
             {preview.refund > 0n && <Row label="Refunded immediately">{formatEth(preview.refund)}</Row>}
-            <Row label="You receive at least">{formatTim(minTokens(commitment + preview.accepted, price))}</Row>
+            <Row label="You receive at least">{formatToken(minTokens(commitment + preview.accepted, price), listing.symbol)}</Row>
             {preview.sellsOut && (
               <p className="callout">
-                This bid sells out the auction at {formatEth(price)} per TIM. The surplus comes back in the same
+                This bid sells out the auction at {formatEth(price)} per {listing.symbol}. The surplus comes back in the same
                 transaction, and every bidder pays that price.
               </p>
             )}
@@ -120,7 +120,7 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
         Preview uses the current price. The price keeps falling, so the final split is fixed when the transaction is
         mined, and everyone pays the same final price.
       </p>
-      <TxStatusLine status={tx.status} chainId={chainId} />
+      <TxStatusLine status={tx.status} />
     </Card>
   );
 }

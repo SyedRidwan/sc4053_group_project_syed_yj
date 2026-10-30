@@ -80,6 +80,13 @@ export function proRataTokens(params: AuctionParams, commitment: bigint, totalCo
   return totalCommitted === 0n ? 0n : (commitment * params.totalTokens) / totalCommitted;
 }
 
+/** Same as `_finalize()`: the tokens sold at a clearing price, capped at the supply. The rest are burned. */
+export function tokensSoldAt(params: AuctionParams, totalCommitted: bigint, clearingPrice: bigint): bigint {
+  if (clearingPrice === 0n) return 0n;
+  const sold = (totalCommitted * TOKEN_UNIT) / clearingPrice;
+  return sold < params.totalTokens ? sold : params.totalTokens;
+}
+
 /** Seconds into the auction at which the schedule reached `price` (for plotting bids). */
 export function offsetForPrice(params: AuctionParams, price: bigint): number {
   const range = params.startPrice - params.reservePrice;

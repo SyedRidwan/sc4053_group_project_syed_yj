@@ -1,0 +1,19 @@
+> hortons-launchpad-frontend@1.0.0 e2e
+> node e2e/lifecycle.mjs
+
+Deploying a fresh factory to localhost…
+  ✓ seller connected with no sign-up
+  ✓ form explains invalid values before the wallet opens
+  ✓ seller launched Alpha Coin in one transaction and landed on its page
+  ✓ bidder sees the listing on the market
+  ✓ 20 ETH bid confirmed
+  ✓ 100 ETH bid capped, surplus refunded, auction settled
+  ✓ bidder claimed tokens
+  ✓ seller withdrew the proceeds
+  ✓ result card shows 1,000 ALP sold, under the listing's own symbol
+  ✓ second listing expired, settled at the reserve, burned 500 BET, and left the first listing alone
+  ✓ bidder's portfolio lists bids across both listings
+  ✓ curator hid and verified a listing
+  ✓ hidden listing left the market, and its bidder could still claim
+  ✓ no horizontal scroll on any page at 390px
+Passed.

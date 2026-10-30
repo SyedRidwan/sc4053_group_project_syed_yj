@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import { usePublicClient } from "wagmi";
 import { dutchAuctionAbi, hortonsTokenAbi } from "../abi";
-import type { Deployment } from "../deployments";
 import type { AuctionParams } from "../lib/auction";
 import type { ChainId } from "../wagmi";
+import type { Listing } from "./useLaunches";
 
 export const REFRESH_MS = 4000;
 
@@ -17,7 +17,6 @@ export interface AccountPosition {
 }
 
 export interface AuctionSnapshot {
-  seller: Address;
   params: AuctionParams;
   startTime: bigint;
   endTime: bigint;
@@ -35,25 +34,24 @@ export interface AuctionSnapshot {
 }
 
 /** Reads the whole auction state, plus the connected account's position, every few seconds. */
-export function useAuction(deployment: Deployment, account?: Address) {
-  const chainId = deployment.chainId as ChainId;
+export function useAuction(listing: Listing, account?: Address) {
+  const chainId = listing.chainId as ChainId;
   const client = usePublicClient({ chainId });
 
   return useQuery({
-    queryKey: ["auction", chainId, deployment.auction.address, account],
+    queryKey: ["auction", chainId, listing.auction, account],
     enabled: Boolean(client),
     refetchInterval: REFRESH_MS,
     queryFn: async (): Promise<AuctionSnapshot> => {
       if (!client) throw new Error("No RPC client for this network");
-      const auction = { address: deployment.auction.address, abi: dutchAuctionAbi } as const;
-      const token = { address: deployment.token.address, abi: hortonsTokenAbi } as const;
+      const auction = { address: listing.auction, abi: dutchAuctionAbi } as const;
+      const token = { address: listing.token, abi: hortonsTokenAbi } as const;
 
       // A pending block carries the timestamp the next transaction will see. On a local
       // chain that has been fast-forwarded, the latest block's timestamp can lag far behind.
       const block = await client.getBlock({ blockTag: "pending" }).catch(() => client.getBlock());
 
       const [
-        seller,
         totalTokens,
         startPrice,
         reservePrice,
@@ -66,7 +64,6 @@ export function useAuction(deployment: Deployment, account?: Address) {
         proceedsWithdrawn,
         tokenSupply,
       ] = await Promise.all([
-        client.readContract({ ...auction, functionName: "seller" }),
         client.readContract({ ...auction, functionName: "totalTokens" }),
         client.readContract({ ...auction, functionName: "startPrice" }),
         client.readContract({ ...auction, functionName: "reservePrice" }),
@@ -92,7 +89,6 @@ export function useAuction(deployment: Deployment, account?: Address) {
       }
 
       return {
-        seller,
         params: { totalTokens, startPrice, reservePrice },
         startTime,
         endTime,
@@ -122,21 +118,21 @@ export function useChainNow(snapshot?: Pick<AuctionSnapshot, "chainTime" | "fetc
   return snapshot.chainTime + BigInt(Math.floor((Date.now() - snapshot.fetchedAt) / 1000));
 }
 
-/** Every event the auction has emitted since deployment, oldest first. */
-export function useAuctionEvents(deployment: Deployment) {
-  const chainId = deployment.chainId as ChainId;
+/** Every event the auction has emitted since it was created, oldest first. */
+export function useAuctionEvents(listing: Listing) {
+  const chainId = listing.chainId as ChainId;
   const client = usePublicClient({ chainId });
 
   return useQuery({
-    queryKey: ["events", chainId, deployment.auction.address],
+    queryKey: ["events", chainId, listing.auction],
     enabled: Boolean(client),
     refetchInterval: REFRESH_MS,
     queryFn: async () => {
       if (!client) throw new Error("No RPC client for this network");
       return client.getContractEvents({
-        address: deployment.auction.address,
+        address: listing.auction,
         abi: dutchAuctionAbi,
-        fromBlock: BigInt(deployment.auction.blockNumber),
+        fromBlock: listing.createdBlock,
         strict: true,
       });
     },

@@ -1,71 +1,31 @@
-import { usePublicClient, useWriteContract } from "wagmi";
-import { dutchAuctionAbi, hortonsTokenAbi } from "../abi";
+import { useWriteContract } from "wagmi";
+import { launchFactoryAbi } from "../abi";
 import { useTx } from "../hooks/useTx";
-import { formatEth, formatTim } from "../lib/format";
+import { formatEth } from "../lib/format";
 import type { ChainId } from "../wagmi";
-import { Card, Row, TxStatusLine, type AuctionView } from "./ui";
+import { Card, TxStatusLine, type AuctionView } from "./ui";
 
-/** Shown only to the seller: start the auction, then withdraw the proceeds once it settles. */
-export function SellerCard({ deployment, snapshot, phase, account }: AuctionView) {
-  const chainId = deployment.chainId as ChainId;
-  const client = usePublicClient({ chainId });
+/** Shown only to the listing's seller. The factory checks the same thing on-chain. */
+export function SellerCard({ listing, snapshot, phase }: AuctionView) {
+  const chainId = listing.chainId as ChainId;
   const { writeContractAsync } = useWriteContract();
   const tx = useTx(chainId);
-  const { params } = snapshot;
-
-  async function start() {
-    if (!account || !client) return;
-    // start() pulls the supply with transferFrom, so it needs an allowance first
-    const allowance = await client.readContract({
-      address: deployment.token.address,
-      abi: hortonsTokenAbi,
-      functionName: "allowance",
-      args: [account, deployment.auction.address],
-    });
-    if (allowance < params.totalTokens) {
-      const approved = await tx.run("Approve TIM", () =>
-        writeContractAsync({
-          address: deployment.token.address,
-          abi: hortonsTokenAbi,
-          functionName: "approve",
-          args: [deployment.auction.address, params.totalTokens],
-          chainId,
-        })
-      );
-      if (!approved) return;
-    }
-    await tx.run("Start auction", () =>
-      writeContractAsync({ address: deployment.auction.address, abi: dutchAuctionAbi, functionName: "start", chainId })
-    );
-  }
 
   function withdraw() {
     return tx.run("Withdraw", () =>
       writeContractAsync({
-        address: deployment.auction.address,
-        abi: dutchAuctionAbi,
+        address: listing.factory,
+        abi: launchFactoryAbi,
         functionName: "withdrawProceeds",
+        args: [listing.id],
         chainId,
       })
     );
   }
 
   return (
-    <Card className="card-seller" title="Seller">
-      {phase === "not-started" && (
-        <>
-          <Row label="Supply">{formatTim(params.totalTokens)}</Row>
-          <Row label="Start price">{formatEth(params.startPrice)}</Row>
-          <Row label="Reserve price">{formatEth(params.reservePrice)}</Row>
-          <p className="muted">Starting moves the supply into the auction and opens the 20-minute window.</p>
-          <button className="button button-primary" type="button" onClick={start} disabled={tx.busy}>
-            {tx.busy ? "Starting…" : "Approve and start auction"}
-          </button>
-        </>
-      )}
-      {(phase === "active" || phase === "sold-out" || phase === "ended") && (
-        <p className="muted">Proceeds can be withdrawn once the auction is settled.</p>
-      )}
+    <Card className="card-seller" title="You are the seller">
+      {phase !== "finalized" && <p className="muted">Proceeds can be withdrawn once the auction is settled.</p>}
       {phase === "finalized" &&
         (snapshot.proceedsWithdrawn ? (
           <p className="muted">Proceeds of {formatEth(snapshot.totalCommitted)} have been withdrawn.</p>
@@ -74,7 +34,7 @@ export function SellerCard({ deployment, snapshot, phase, account }: AuctionView
             {tx.busy ? "Withdrawing…" : `Withdraw ${formatEth(snapshot.totalCommitted)}`}
           </button>
         ))}
-      <TxStatusLine status={tx.status} chainId={chainId} />
+      <TxStatusLine status={tx.status} />
     </Card>
   );
 }

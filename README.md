@@ -1,122 +1,113 @@
-# Horton's Token Launch: Uniform-Price Dutch Auction
+# Horton's Launchpad: Fair-Price Dutch Auction Token Launches
 
-SC4053 Blockchain Technology development project, Option 2. An ERC20 token launch where bidders commit Ether
-while the price falls for 20 minutes. Everyone pays the same clearing price, and unsold tokens are burned.
+SC4053 Blockchain Technology development project, Option 2. Anyone can launch an ERC20 token from the website. Every
+token sells in its own 20-minute Dutch auction: bidders commit Ether while the price falls, everyone pays the same
+clearing price, and unsold tokens are burned.
 
 The full rules, mapped clause by clause to the project brief, are in [spec.md](spec.md).
 
+## Run it
+
+Requires Node.js (tested on 24.11.0) and npm.
+
+```bash
+npm install
+npm --prefix frontend install
+npm run demo
+```
+
+`npm run demo` starts a local chain, deploys the factory, fills the market with sample listings, and serves the site at
+**http://localhost:5173**. Press Ctrl+C to stop it. It needs port 8545 and port 5173 to be free.
+
+Each run starts from a fresh chain with six listings:
+
+| Listing | State |
+| --- | --- |
+| Horton's (TIM) | Live, verified, with the full 20 minutes left. This is the main listing. |
+| Nova (NOVA) | Live, and expires about 4 minutes after seeding, so you can watch the burn. Change this with `npm run demo -- --expires-in 300`. |
+| Meridian (MRD) | Live and about halfway through, with room for a bid to sell it out and be refunded. |
+| Free Money (FREE) | Live and misleading, for the curator to hide. |
+| Aurora (AUR) | Sold out and settled, with proceeds waiting for its seller. |
+| Cobalt (COB) | Expired and settled at the reserve, with its unsold half burned. |
+
+### Connect MetaMask
+
+1. Add a network with RPC URL `http://127.0.0.1:8545`, chain ID `31337` and currency `ETH`.
+2. Import these Hardhat test accounts. **Their keys are public, so never send real funds to them.**
+
+| Use it as | Account | Private key |
+| --- | --- | --- |
+| Curator | #0 `0xf39F…2266` | `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80` |
+| Seller of Aurora, Meridian and Horton's | #1 `0x7099…79C8` | `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` |
+| Buyer (no seeded activity) | #3 `0x90F7…b906` | `0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6` |
+
+3. **After every restart of the chain:** select the local network in MetaMask and run Settings > Advanced > "Clear
+   activity and nonce data" for each account, before sending anything. Restarting resets the chain, so new transactions
+   reuse the nonces of confirmed ones MetaMask still remembers. MetaMask can then show "Transaction failed" for a
+   transaction that succeeded. The site's own status line reads the real result from the chain.
+
 ## How it works
 
-1. The seller deploys `HortonsToken` and `DutchAuction`, then calls `start()`. This pulls the sale supply into the
-   auction and starts the 20-minute clock.
-2. The price falls linearly from the start price to the reserve price. Bidders commit ETH with `bid()`.
-3. The auction clears as soon as the committed ETH buys the whole supply at the current price. The bid that
-   crosses that line is accepted only up to the remaining room, and its surplus is refunded in the same transaction.
+1. A seller fills in the Launch form. One transaction to `LaunchFactory` creates the token and its auction, moves the
+   whole supply into the auction, and starts its 20-minute clock.
+2. The price falls linearly from the start price to the reserve. Bidders commit ETH with `bid()`.
+3. The auction clears as soon as the committed ETH buys the whole supply at the current price. The bid that crosses that
+   line is accepted only up to the remaining room, and its surplus is refunded in the same transaction.
 4. If 20 minutes pass first, the auction settles at the reserve price and the unsold tokens are burned.
-5. Every bidder claims `commitment ÷ clearing price` tokens. The seller withdraws exactly the ETH committed.
+5. Every bidder claims their share at the one clearing price. The seller withdraws exactly the ETH committed.
+
+### Who can do what
+
+There are no sign-ups. The wallet is the identity, and the site works out each role from it.
+
+| Role | Who | Can |
+| --- | --- | --- |
+| Visitor | No wallet connected | Browse the market and every listing |
+| Bidder | Any wallet | Bid, settle, and claim tokens; see them on the Portfolio page |
+| Seller | The wallet that created a listing | Everything above, plus withdraw that listing's proceeds |
+| Curator | One fixed address, set at deployment | Hide a listing from the market, or mark it verified |
+
+The curator **cannot** touch funds, prices or running auctions, and a hidden auction keeps running. Both are tested.
+
+### Pages
+
+- **Market:** every listing, with its live price, countdown and progress.
+- **Listing:** a price chart with bids and the sell-out point, a bid form that previews your refund, your position,
+  settle and claim, and an activity feed.
+- **Launch a token:** a form that checks your values and previews the launch before your wallet opens.
+- **Portfolio:** your bids, your listings and your tokens, across every listing.
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
-| `contracts/` | `DutchAuction.sol`, `HortonsToken.sol`, and the test-only `ReentrancyAttacker.sol` |
-| `test/` | Auction and token tests (unit, reentrancy, seeded random invariants) and tests for the CLI tasks |
-| `tasks/auction.js` | Hardhat tasks to deploy and operate the auction on the local chain |
-| `frontend/` | React web app (Vite, wagmi, viem, RainbowKit), its unit tests and an end-to-end UI test |
-| `deployments/` | Addresses and ABIs, written by `auction:deploy` (git-ignored) |
-| `audit/` | AI Audit Report material: evidence logs, the AI issue log, the issues report |
+| `contracts/` | `LaunchFactory.sol`, `DutchAuction.sol`, `HortonsToken.sol`, and the test-only `ReentrancyAttacker.sol` and `LaunchTestHelpers.sol` |
+| `test/` | Contract tests: unit, isolation, reentrancy, curator limits, seeded random invariants, and tasks |
+| `tasks/` | `launchpad.js` deploys and seeds the market. `auction.js` operates one standalone auction from the command line. |
+| `scripts/demo.js` | The `npm run demo` command |
+| `frontend/` | React web app (Vite, wagmi, viem, RainbowKit), unit tests and an end-to-end UI test |
+| `deployments/` | Addresses written at deployment (git-ignored, because local addresses change) |
+| `audit/` | [AI Audit Report](audit/ai-audit-report.md), [AI issue log](audit/ai-issues.md) and evidence |
 | `prompts/` | Prompt logs for each AI-assisted session |
+| `docs/` | The plan for the demo video |
 
-## Setup
-
-Requires Node.js (tested on 24.11.0) and npm. Slither is optional, for static analysis.
-
-```bash
-npm install
-npm test            # 39 tests
-npm run coverage    # DutchAuction.sol: 100% lines, 97% branches
-npm run slither     # needs Slither installed (pip install slither-analyzer)
-```
-
-### Continuous integration
-
-`.github/workflows/ci.yml` runs on every push and pull request:
-
-| Job | Checks |
-| --- | --- |
-| Contract tests and coverage | `npm test` and `npm run coverage` (report uploaded as an artifact) |
-| Slither static analysis | Fails on any high-severity finding; the test-only `ReentrancyAttacker` is excluded |
-| Frontend unit tests and build | Vitest, type check and production build |
-| End-to-end UI test | Starts a local chain and the app, then runs the full lifecycle in headless Chrome |
-
-## Local demo
-
-Use two terminals.
+## Tests
 
 ```bash
-# Terminal 1: a local chain with 20 funded accounts
-npm run node
-
-# Terminal 2: deploy a fresh auction and play a scenario
-npm run demo:local                                                    # "live": two bids, auction left running
-npx hardhat auction:demo --scenario soldout --network localhost       # bridging bid sells it out at 0.06 ETH
-npx hardhat auction:demo --scenario expiry --network localhost        # time runs out, 750 TIM burned
+npm test                            # 81 contract tests
+npm run coverage                    # 100% lines; 98% branches
+npm run slither                     # needs Slither (pip install slither-analyzer)
+npm --prefix frontend test          # 29 frontend unit tests
+npm --prefix frontend run build     # type check and production build
+npm --prefix frontend run e2e       # the whole site in a headless browser
 ```
 
-Local prices default to a 0.1 ETH start and a 0.02 ETH reserve for 1,000 TIM. The demo skips chain time forward,
-so nobody waits 20 minutes. To drive the auction by hand:
+The end-to-end test needs a chain and the site running (`npm run node` and `npm run frontend` in two terminals). It
+launches two tokens through the form with an injected test wallet, then covers a sell-out with a refund, an expiry with a
+burn, claims, withdrawal, the portfolio, the curator, and mobile layouts.
 
-```bash
-npx hardhat auction:status --network localhost
-npx hardhat auction:bid --eth 10 --from 1 --network localhost         # --from = account index
-npx hardhat auction:advance --seconds 300 --network localhost         # local only
-npx hardhat auction:finalize --network localhost
-npx hardhat auction:claim --from 1 --network localhost
-npx hardhat auction:withdraw --network localhost
-```
-
-To use MetaMask against the local chain, add a network with RPC `http://127.0.0.1:8545` and chain ID `31337`.
-Then import one of the test accounts printed by `npm run node`. Those keys are public; never send real funds to them.
-
-**After every restart of `npm run node`:** in MetaMask, select the local network and run Settings > Advanced >
-"Clear activity and nonce data" for each account you have used, before sending anything. Restarting resets the chain,
-so new transactions reuse the nonces of confirmed ones MetaMask still remembers. MetaMask can then show "Transaction
-failed" for a transaction that succeeded. The site's own status line reads the real result from the chain.
-
-## Web app
-
-The frontend lives in `frontend/` and reads contract addresses from `deployments/*.json`, so it picks up every
-new deployment automatically.
-
-```bash
-npm --prefix frontend install    # first time only
-npm run frontend                 # http://localhost:5173
-```
-
-With `npm run node` and `npm run demo:local` running, the page shows the live auction. Connect MetaMask on the
-local network (chain ID 31337). Features:
-
-- **Live price and countdown**, computed every second from chain time with the contract's own formula.
-- **A price chart** that shows the falling price, the bids so far, and the committed-capital line: the auction
-  sells out where the two lines meet.
-- **A bid form** that previews how much ETH is accepted, how much is refunded immediately, and the minimum tokens
-  you receive.
-- **Your position and claims**, a **settle** button once bidding ends, and a **seller panel** to start the auction
-  and withdraw proceeds.
-- **An activity feed** of every bid, settlement, claim and withdrawal.
-
-Optional settings go in `frontend/.env` (see `frontend/.env.example`): a WalletConnect project ID for mobile
-wallets.
-
-```bash
-npm --prefix frontend test         # unit tests for the client-side auction maths
-npm --prefix frontend run build    # type-check and production build
-npm --prefix frontend run e2e      # full lifecycle through the UI (needs the node and the dev server running)
-```
-
-The end-to-end test deploys a fresh auction and drives it through headless Edge or Chrome with an injected test
-wallet: the seller starts it, a bidder bids, a second bid sells it out with a refund, the bidder claims, and the
-seller withdraws.
+`.github/workflows/ci.yml` runs contract tests and coverage, Slither (failing on any high-severity finding), frontend
+tests and build, and the end-to-end test on every push.
 
 ## How the brief's "tricky points" are handled
 
@@ -124,15 +115,23 @@ seller withdraws.
 | --- | --- |
 | Block-based countdown and continuous price decay | The price is computed from `block.timestamp` on every call, multiplying before dividing, so there is no stored state to update and no rounding drift. |
 | Claims when a bid bridges the clearing threshold | The bridging bid is accepted only up to the ETH needed to buy the remaining supply. The auction finalizes in the same transaction, and the surplus is refunded. |
-| Safe ETH refunds against reentrancy | The bridging refund is the only refund path. State is written before the transfer, and `bid`, `claim` and `withdrawProceeds` are `nonReentrant`. A test attacker contract tries to re-enter every function and fails. |
+| Safe ETH refunds against reentrancy | The bridging refund is the only refund path. State is written before the transfer, and `bid`, `claim` and both `withdrawProceeds` functions are `nonReentrant`. Test attackers try to re-enter and fail. |
 | Permanently burning unsold tokens | The auction calls `ERC20Burnable.burn` on its own unsold balance, which lowers `totalSupply`. Tests assert the new supply. |
+
+## Operating one auction from the command line
+
+`tasks/auction.js` deploys and drives a single auction without the factory. These use a separate deployment file, which
+the website does not read.
+
+```bash
+npx hardhat auction:demo --scenario soldout --network localhost   # also: live, expiry
+npx hardhat auction:status --network localhost
+npx hardhat auction:bid --eth 10 --from 1 --network localhost
+npx hardhat auction:advance --seconds 300 --network localhost
+```
 
 ## AI Audit Report material
 
-v1 (commits `138f1ce` to `ef71e56`) was written by hand before any AI tool was used. Later work was AI-assisted
-with Claude Code. See `audit/ai-issues.md` for the AI's mistakes, `audit/evidence/` for test, coverage and
-Slither logs, and `prompts/` for the prompt logs.
-
-The second implementation in this repository, on the `dutch-auction-token-launch` branch, allocated tokens at each bid's own
-price. `audit/evidence/2026-10-28-branch-comparison.md` compares the two designs on the same bids and lists what this
-branch took from it.
+v1 (commits `138f1ce` to `ef71e56`) was written by hand before any AI tool was used. Later work was AI-assisted with
+Claude Code. See the [report](audit/ai-audit-report.md), `audit/ai-issues.md` for the AI's mistakes, `audit/evidence/` for
+test, coverage, mutation and Slither logs, and `prompts/` for the prompt logs.
