@@ -14,7 +14,7 @@ import { HiddenBadge, VerifiedBadge, WatchButton, type AuctionView } from "../co
 import { useAuction, useAuctionEvents, useChainNow } from "../hooks/useAuction";
 import type { Listing } from "../hooks/useLaunches";
 import { errorMessage } from "../hooks/useTx";
-import { phaseOf, priceAt } from "../lib/auction";
+import { phaseOf, priceAt, scheduleElapsed } from "../lib/auction";
 import { shortAddress } from "../lib/format";
 
 export function LaunchPage({ listing, account, isCurator }: { listing: Listing; account?: Address; isCurator: boolean }) {
@@ -41,7 +41,7 @@ export function LaunchPage({ listing, account, isCurator }: { listing: Listing; 
     listing,
     snapshot,
     now,
-    price: priceAt(snapshot.params, snapshot.startTime, now),
+    price: priceAt(snapshot.params, snapshot.startTime, snapshot.startTime + scheduleElapsed(snapshot.params, snapshot, now)),
     phase: phaseOf(snapshot.params, snapshot, now),
     account,
   };

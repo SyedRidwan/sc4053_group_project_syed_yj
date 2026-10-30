@@ -1,9 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { parseEther } from "viem";
+import { priceAt, scheduleElapsed } from "./auction";
 import { effectivePrice, project, simulate } from "./simulate";
 
 const E = parseEther;
 const params = { totalTokens: E("1000"), startPrice: E("0.1"), reservePrice: E("0.02") };
+
+describe("scheduleElapsed", () => {
+  const startTime = 1000n;
+
+  it("follows the clock while an auction is running", () => {
+    expect(scheduleElapsed(params, { startTime, totalCommitted: E("60") }, startTime + 300n)).toBe(300n);
+  });
+
+  it("stops at the sell-out, however much later it is read", () => {
+    const state = { startTime, totalCommitted: E("60") }; // Buys every token at 0.06 ETH, which is t = 600
+    for (const later of [600n, 601n, 1199n, 5000n]) {
+      const stopped = scheduleElapsed(params, state, startTime + later);
+      expect(stopped).toBe(600n);
+      expect(priceAt(params, startTime, startTime + stopped)).toBe(E("0.06"));
+    }
+  });
+
+  it("stops at 20 minutes if the auction never sells out", () => {
+    const state = { startTime, totalCommitted: E("5") };
+    expect(scheduleElapsed(params, state, startTime + 9999n)).toBe(1200n);
+    expect(scheduleElapsed(params, { startTime, totalCommitted: 0n }, startTime + 9999n)).toBe(1200n);
+  });
+});
 
 describe("project", () => {
   it("predicts a sell-out and a pro-rata share when the committed ETH is enough", () => {

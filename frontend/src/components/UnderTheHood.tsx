@@ -1,5 +1,5 @@
 import { useWatchAsset } from "wagmi";
-import { DURATION, ethToSellOut, impliedPrice, tokensSoldAt } from "../lib/auction";
+import { DURATION, ethToSellOut, impliedPrice, scheduleElapsed, tokensSoldAt } from "../lib/auction";
 import { formatEth, formatToken, formatUnits18 } from "../lib/format";
 import { CopyAddress, Row, type AuctionView } from "./ui";
 
@@ -16,8 +16,9 @@ function Formula({ name, expression, result }: { name: string; expression: strin
 /** The contract's own sums, filled in with this auction's numbers and updated every second. */
 export function UnderTheHood({ listing, snapshot, now, price, phase, account }: AuctionView) {
   const { watchAsset } = useWatchAsset();
-  const { params, startTime, totalCommitted } = snapshot;
-  const elapsed = now > startTime + DURATION ? DURATION : now - startTime;
+  const { params, totalCommitted } = snapshot;
+  const elapsed = scheduleElapsed(params, snapshot, now);
+  const over = phase !== "active";
   const needed = ethToSellOut(params, price);
   const implied = impliedPrice(params, totalCommitted);
   const clearing = implied > params.reservePrice ? implied : params.reservePrice;
@@ -28,11 +29,11 @@ export function UnderTheHood({ listing, snapshot, now, price, phase, account }: 
     <details className="hood">
       <summary>
         <span>Under the hood</span>
-        <span className="muted">The contract's sums for this auction, live</span>
+        <span className="muted">{over ? "The contract's sums at the moment this auction ended" : "The contract's sums for this auction, live"}</span>
       </summary>
       <div className="hood-body">
         <Formula
-          name="Price now"
+          name={over ? "Price when it ended" : "Price now"}
           expression={`${short(params.startPrice)} − (${short(params.startPrice)} − ${short(params.reservePrice)}) × ${elapsed} ÷ ${DURATION}`}
           result={formatEth(price)}
         />
@@ -44,15 +45,15 @@ export function UnderTheHood({ listing, snapshot, now, price, phase, account }: 
         <Formula
           name="Sold out?"
           expression={`committed ${short(totalCommitted)} ≥ needed ${short(needed)}`}
-          result={totalCommitted >= needed ? "Yes" : "Not yet"}
+          result={totalCommitted >= needed ? "Yes" : over ? "No, time ran out" : "Not yet"}
         />
         <Formula
-          name={phase === "finalized" ? "Clearing price" : "Clearing price if it ended now"}
+          name={over ? "Clearing price" : "Clearing price if it ended now"}
           expression={`max(reserve ${short(params.reservePrice)}, ${short(totalCommitted)} ÷ ${short(params.totalTokens)})`}
           result={formatEth(phase === "finalized" ? snapshot.clearingPrice : clearing)}
         />
         <Formula
-          name={phase === "finalized" ? "Tokens burned" : "Tokens burned if it ended now"}
+          name={over ? "Tokens burned" : "Tokens burned if it ended now"}
           expression={`${short(params.totalTokens)} − ${short(sold)} sold`}
           result={formatToken(params.totalTokens - sold, listing.symbol)}
         />

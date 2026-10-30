@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AuctionEvent } from "../hooks/useAuction";
-import { DURATION, impliedPrice, offsetForPrice, sellOutOffset, type AuctionParams } from "../lib/auction";
+import { DURATION, impliedPrice, offsetForPrice, scheduleElapsed, sellOutOffset, type AuctionParams } from "../lib/auction";
 import { formatEth, formatOffset, formatUnits18 } from "../lib/format";
 import { Card, type AuctionView } from "./ui";
 
@@ -60,8 +60,8 @@ export function PriceChart({ view, events }: { view: AuctionView; events: Auctio
   const clearedAt =
     phase === "finalized" ? (clearingPrice > params.reservePrice ? offsetForPrice(params, clearingPrice) : SECONDS) : null;
 
-  // The solid "elapsed" line stops at the clearing point once settled, otherwise at now
-  const elapsedEnd = clearedAt ?? (startTime === 0n ? 0 : Math.min(Number(now - startTime), SECONDS));
+  // The solid "elapsed" line stops at the clearing point once settled, or at the sell-out or expiry before that
+  const elapsedEnd = clearedAt ?? (startTime === 0n ? 0 : Number(scheduleElapsed(params, snapshot, now)));
   const elapsedPrice = clearedAt !== null ? clearingPrice : price;
 
   // Keep labels inside the plot: put them on whichever side of their point has room

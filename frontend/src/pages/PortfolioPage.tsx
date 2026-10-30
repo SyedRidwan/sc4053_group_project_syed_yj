@@ -12,7 +12,7 @@ import { useClaim } from "../hooks/useClaim";
 import { paramsOf, usePositions, type Listing, type Position } from "../hooks/useLaunches";
 import { useTx } from "../hooks/useTx";
 import { useWatchlist } from "../hooks/useWatchlist";
-import { ethToSellOut, phaseOf, priceAt, type Phase } from "../lib/auction";
+import { ethToSellOut, phaseOf, priceAt, scheduleElapsed, type Phase } from "../lib/auction";
 import { formatCountdown, formatEth, formatToken, formatUnits18 } from "../lib/format";
 import { launchHref } from "../lib/route";
 import { project } from "../lib/simulate";
@@ -29,7 +29,8 @@ function Tracker({ listing, position, phase, now, account }: { listing: Listing;
   const [bidding, setBidding] = useState(false);
 
   const params = paramsOf(listing);
-  const price = priceAt(params, listing.startTime, now);
+  const elapsed = scheduleElapsed(params, listing, now);
+  const price = priceAt(params, listing.startTime, listing.startTime + elapsed);
   const live = phase === "active";
   const remaining = listing.endTime - now;
   const needed = ethToSellOut(params, price);
@@ -90,7 +91,7 @@ function Tracker({ listing, position, phase, now, account }: { listing: Listing;
             )}
           </div>
         </div>
-        <Curve params={params} elapsed={now - listing.startTime} totalCommitted={listing.totalCommitted} live={live} />
+        <Curve params={params} elapsed={elapsed} totalCommitted={listing.totalCommitted} live={live} />
         {live && (
           <div className="demand">
             <div className="demand-bar" role="progressbar" aria-label={`Share of the ETH needed to sell out ${listing.symbol}`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>

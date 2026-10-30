@@ -41,7 +41,8 @@ export function Overview({ listing, snapshot, now, price, phase }: AuctionView) 
           </span>
           <span className="figure-value">{formatEth(phase === "finalized" ? snapshot.clearingPrice : price)}</span>
           <span className="figure-sub">
-            Falling from {formatEth(params.startPrice)} to the{" "}
+            {live ? "Falling from" : "Started at"} {formatEth(params.startPrice)}
+            {live ? " to the " : ", with a "}
             <Term means="The lowest the price can go. If the auction reaches it, it settles there and unsold tokens are burned.">
               reserve
             </Term>{" "}

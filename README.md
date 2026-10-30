@@ -102,7 +102,7 @@ The site has light and dark themes, and starts with your system's preference.
 npm test                            # 81 contract tests
 npm run coverage                    # 100% lines; 98% branches
 npm run slither                     # needs Slither (pip install slither-analyzer)
-npm --prefix frontend test          # 36 frontend unit tests
+npm --prefix frontend test          # 39 frontend unit tests
 npm --prefix frontend run build     # type check and production build
 npm --prefix frontend run e2e       # the whole site in a headless browser
 ```

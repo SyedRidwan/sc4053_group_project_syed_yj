@@ -70,6 +70,16 @@ export function sellOutOffset(params: AuctionParams, totalCommitted: bigint): bi
   return (drop * DURATION + range - 1n) / range;
 }
 
+/**
+ * Seconds of the price schedule that really ran. `currentPrice()` keeps falling after a sell-out, but by then it means
+ * nothing, so anything shown to a person stops where the auction stopped: at the sell-out, or at 20 minutes.
+ */
+export function scheduleElapsed(params: AuctionParams, state: { startTime: bigint; totalCommitted: bigint }, now: bigint): bigint {
+  const elapsed = now > state.startTime ? now - state.startTime : 0n;
+  const stop = sellOutOffset(params, state.totalCommitted) ?? DURATION;
+  return elapsed < stop ? elapsed : stop;
+}
+
 /** Tokens guaranteed at `price`: until sell-out the clearing price can only fall. */
 export function minTokens(commitment: bigint, price: bigint): bigint {
   return price === 0n ? 0n : (commitment * TOKEN_UNIT) / price;

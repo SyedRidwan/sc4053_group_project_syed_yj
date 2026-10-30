@@ -36,6 +36,7 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 | AI-22 | Wrote tests that could not fail: a swallowed assertion and two tests blind to their own mutation | Medium | 04 | Fixed |
 | AI-23 | First launchpad UI looked generic, which the operator had to point out; tests cannot judge this | Medium | 04 | Fixed |
 | AI-24 | Hidden tooltips made the listing page scroll sideways on phones | Low | 04 | Fixed |
+| AI-25 | Displayed prices kept falling after an auction had sold out, contradicting the clearing price on the same page | Medium | 04 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -325,3 +326,17 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 - **How it was fixed:** the end-to-end test's width check failed, and a script listed the overflowing elements. Hidden tips now
   use `display: none`, and on phones they show as a bar along the bottom of the screen.
 - **Evidence:** `frontend/e2e/lifecycle.mjs` ("no horizontal scroll on any page at 390px").
+
+## AI-25: Prices kept moving after the auction ended
+
+- **Why the AI made the mistake:** the "Under the hood" panel and the mini-charts worked out the price from the current time,
+  mirroring `currentPrice()`. That function keeps falling for the full 20 minutes even after a sell-out, when it no longer
+  means anything. The AI checked the panel on a live auction only, and its tests never looked at an ended one that had sold
+  out early. The earlier chart handled this only for settled auctions, and the new code did not reuse that logic.
+- **Why it is problematic:** a settled page contradicted itself: Meridian showed "Price now 0.0239667 ETH" under a 0.0263333 ETH
+  clearing price, with numbers still ticking. A marker would read that as a pricing bug, and the brief names inaccurate price
+  calculation directly. The contract and all payouts were correct; this was display only.
+- **How it was fixed:** the operator spotted it. One function, `scheduleElapsed`, now stops the schedule at the sell-out or at 20
+  minutes, and the listing page, chart, panel, market and portfolio all use it. Ended auctions now say "Price when it ended".
+- **Evidence:** the `scheduleElapsed` tests in `frontend/src/lib/simulate.test.ts`. On the running site, all four ended coins read the
+  same 6 seconds apart, and Meridian showed 0.0263333 ETH at 710 seconds, with needed ETH equal to committed ETH.

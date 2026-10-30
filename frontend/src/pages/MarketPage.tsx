@@ -4,7 +4,7 @@ import { Descent } from "../components/Descent";
 import { HiddenBadge, PhaseBadge, VerifiedBadge, WatchButton } from "../components/ui";
 import { useChainNow } from "../hooks/useAuction";
 import { paramsOf, type Listing } from "../hooks/useLaunches";
-import { ethToSellOut, phaseOf, priceAt, tokensSoldAt, type Phase } from "../lib/auction";
+import { ethToSellOut, phaseOf, priceAt, scheduleElapsed, tokensSoldAt, type Phase } from "../lib/auction";
 import { formatCountdown, formatEth, formatToken, formatUnits18, shortAddress } from "../lib/format";
 import { launchHref } from "../lib/route";
 
@@ -47,7 +47,7 @@ function CoinRow({ item, now, index }: { item: Item; now: bigint; index: number 
   const needed = ethToSellOut(params, price);
   const progress = needed === 0n ? 0 : Math.min(100, Number((listing.totalCommitted * 10000n) / needed) / 100);
   const remaining = listing.endTime - now;
-  const elapsed = now - listing.startTime;
+  const elapsed = scheduleElapsed(params, listing, now);
   const sold = tokensSoldAt(params, listing.totalCommitted, listing.clearingPrice);
 
   return (
@@ -122,7 +122,8 @@ export function MarketPage({
   const visible = listings.filter((listing) => isCurator || !listing.hidden);
   const items: Item[] = visible.map((listing) => {
     const params = paramsOf(listing);
-    return { listing, price: priceAt(params, listing.startTime, now), phase: phaseOf(params, listing, now) };
+    const price = priceAt(params, listing.startTime, listing.startTime + scheduleElapsed(params, listing, now));
+    return { listing, price, phase: phaseOf(params, listing, now) };
   });
 
   const live = items.filter((item) => item.phase === "active");
