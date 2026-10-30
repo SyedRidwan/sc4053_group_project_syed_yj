@@ -20,6 +20,5 @@ for (const deployment of Object.values(files)) {
   }
 }
 
-export const explorers: Record<number, string> = {
-  11155111: "https://sepolia.etherscan.io",
-};
+// No block explorer on a local chain; ExplorerLink shows plain text without one
+export const explorers: Record<number, string> = {};

@@ -41,10 +41,14 @@ over a 20-minute window.
 6. **Withdraw:** seller withdraws exactly `totalCommitted`, once. This never touches tokens owed to bidders.
 
 ## 4. Invariants (enforced by tests)
-- Contract ETH balance equals `totalCommitted` until the seller withdraws, then 0.
+- The ETH the contract tracks equals `totalCommitted` until the seller withdraws, and the contract pays out only that
+  tracked amount. Its raw balance can be higher: anyone can force ETH in with `selfdestruct`. That ETH is never paid to
+  anyone and stays stuck, so it cannot affect a bidder or the seller.
 - `tokensSold + tokensBurned = S`, and `token.totalSupply()` drops by `tokensBurned`.
 - Sum of claimed tokens ≤ `tokensSold`. Rounding dust is below 1 token-wei per bidder and always favours the contract.
-- Every bidder's effective price equals `P_clear` up to rounding dust.
+- Every bidder's effective price equals `P_clear` up to rounding dust. The exception is a dust bid too small to buy
+  1 token-wei: a 1 wei bid at a clearing price above 1 ETH per token is owed 0 tokens, `claim()` reverts with "Nothing
+  to claim", and that wei goes to the seller. The web app blocks bids this small.
 - `P_clear ≥ P_reserve`.
 
 ## 5. Coding Rules for AI Tools

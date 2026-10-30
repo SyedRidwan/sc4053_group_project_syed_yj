@@ -5,15 +5,9 @@ const { HardhatPluginError } = require("hardhat/plugins");
 
 const DEPLOYMENTS_DIR = path.join(__dirname, "..", "deployments");
 const LOCAL_NETWORKS = ["hardhat", "localhost"];
-const VERIFY_CONFIRMATIONS = 5;
 const PLUGIN = "auction";
 
-// Sepolia faucets hand out a few hundredths of an ETH, so testnet prices are scaled down
-// until selling out the whole supply costs 0.01-0.05 ETH
-const DEFAULT_PARAMS = {
-  local: { supply: "1000", startPrice: "0.1", reservePrice: "0.02" },
-  testnet: { supply: "1000", startPrice: "0.00005", reservePrice: "0.00001" },
-};
+const DEFAULT_PARAMS = { supply: "1000", startPrice: "0.1", reservePrice: "0.02" };
 
 function isLocal(hre) {
   return LOCAL_NETWORKS.includes(hre.network.name);
@@ -43,12 +37,6 @@ async function getContracts(hre) {
 
 async function getSigner(hre, index) {
   const signers = await hre.ethers.getSigners();
-  if (signers.length === 0) {
-    throw new HardhatPluginError(
-      PLUGIN,
-      `No account configured for "${hre.network.name}". Run: npx hardhat vars set SEPOLIA_PRIVATE_KEY`
-    );
-  }
   if (index >= signers.length) {
     throw new HardhatPluginError(
       PLUGIN,
@@ -114,25 +102,21 @@ task("auction:deploy", "Deploys HortonsToken and DutchAuction and records them i
   .addOptionalParam("supply", "Tokens for sale, in whole TIM", undefined, types.string)
   .addOptionalParam("startPrice", "Opening price in ETH per TIM", undefined, types.string)
   .addOptionalParam("reservePrice", "Reserve price in ETH per TIM", undefined, types.string)
-  .addFlag("skipVerify", "Skip Etherscan verification on public networks")
   .setAction(async (args, hre) => {
-    const defaults = isLocal(hre) ? DEFAULT_PARAMS.local : DEFAULT_PARAMS.testnet;
-    const supply = hre.ethers.parseEther(args.supply ?? defaults.supply);
-    const startPrice = hre.ethers.parseEther(args.startPrice ?? defaults.startPrice);
-    const reservePrice = hre.ethers.parseEther(args.reservePrice ?? defaults.reservePrice);
+    const supply = hre.ethers.parseEther(args.supply ?? DEFAULT_PARAMS.supply);
+    const startPrice = hre.ethers.parseEther(args.startPrice ?? DEFAULT_PARAMS.startPrice);
+    const reservePrice = hre.ethers.parseEther(args.reservePrice ?? DEFAULT_PARAMS.reservePrice);
     const deployer = await getSigner(hre, 0);
 
     await hre.run("compile", { quiet: true });
     console.log(`Deploying to ${hre.network.name} from ${deployer.address}`);
 
-    const tokenArgs = ["Horton's", "TIM", supply];
-    const token = await hre.ethers.deployContract("HortonsToken", tokenArgs, deployer);
+    const token = await hre.ethers.deployContract("HortonsToken", ["Horton's", "TIM", supply], deployer);
     const tokenReceipt = await token.deploymentTransaction().wait();
     const tokenAddress = await token.getAddress();
     console.log(`  HortonsToken: ${tokenAddress}`);
 
-    const auctionArgs = [tokenAddress, supply, startPrice, reservePrice];
-    const auction = await hre.ethers.deployContract("DutchAuction", auctionArgs, deployer);
+    const auction = await hre.ethers.deployContract("DutchAuction", [tokenAddress, supply, startPrice, reservePrice], deployer);
     const auctionReceipt = await auction.deploymentTransaction().wait();
     const auctionAddress = await auction.getAddress();
     console.log(`  DutchAuction: ${auctionAddress}`);
@@ -164,25 +148,6 @@ task("auction:deploy", "Deploys HortonsToken and DutchAuction and records them i
     fs.mkdirSync(DEPLOYMENTS_DIR, { recursive: true });
     fs.writeFileSync(deploymentFile(hre), JSON.stringify(deployment, null, 2) + "\n");
     console.log(`  Saved ${path.relative(process.cwd(), deploymentFile(hre))}`);
-
-    if (!isLocal(hre) && !args.skipVerify) {
-      if (!hre.config.etherscan.apiKey) {
-        console.log("Skipping verification: run `npx hardhat vars set ETHERSCAN_API_KEY` first");
-      } else {
-        console.log(`Waiting for ${VERIFY_CONFIRMATIONS} confirmations before verifying...`);
-        await auction.deploymentTransaction().wait(VERIFY_CONFIRMATIONS);
-        for (const [address, constructorArguments] of [
-          [tokenAddress, tokenArgs],
-          [auctionAddress, auctionArgs],
-        ]) {
-          try {
-            await hre.run("verify:verify", { address, constructorArguments });
-          } catch (err) {
-            console.log(`  Verification of ${address} failed: ${err.message}`);
-          }
-        }
-      }
-    }
 
     return deployment;
   });

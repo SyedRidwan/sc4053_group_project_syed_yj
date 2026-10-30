@@ -29,6 +29,8 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 | AI-15 | Misread a root commit as a child of this branch from a `git log --graph` listing | Low | 03 | Fixed |
 | AI-16 | Called a branch "the team's" without confirming who wrote it (repeat of AI-2) | Medium (process) | 03 | Fixed |
 | AI-17 | Race in the frontend's transaction hook: a new bid typed just after "Bid confirmed" was wiped, making CI flaky | Medium | 01 | Fixed |
+| AI-18 | Offered a stale block tracker as the likely cause of a false MetaMask error before testing it | Low | 04 | Fixed |
+| AI-19 | A code-reading agent stated that MetaMask never reuses a confirmed nonce, from a truncated read | Medium | 04 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -236,3 +238,28 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 - **Evidence:** CI run #6 log (`Timed out waiting for "This bid sells out the auction"`, `lifecycle.mjs:137`) and
   `frontend/src/hooks/useTx.ts`. The end-to-end test then passed 3 of 3 times locally; the local machine rarely hit the
   race before the fix either, so the confirming evidence is CI passing over the following runs.
+
+## AI-18: Premature theory about a false MetaMask error
+
+- **Why the AI made the mistake:** one RPC probe returned Hardhat's "invalid block tag" error, and the browser had been
+  running longer than the node. That fitted a failure mode it already knew, so it told the operator the evidence was
+  pointing that way before testing the link to the toast.
+- **Why it is problematic:** the operator could have spent time on a fix aimed at the wrong state. A restart of the
+  browser resets the block tracker but not the transaction records that cause the toast.
+- **How it was fixed:** a skeptic agent checked it against the code: a stale tracker fails the nonce lookup before the
+  transaction is ever sent, and a success receipt can only produce a warning. The AI told the operator its theory was wrong.
+- **Evidence:** `../prompts/2026-10-30-session-04.md`, prompt 1. After restarting and clearing, the operator reported
+  that MetaMask works.
+
+## AI-19: Wrong claim from a truncated code read
+
+- **Why the AI made the mistake:** an agent read minified code showing `Math.max` over local confirmed nonces and
+  concluded that old records raise the next nonce. It saw the filter only in truncated form. In fact the arguments are
+  swapped in the bundle, so that list is always empty.
+- **Why it is problematic:** this claim would have ruled out the real cause of the toast, and pointed the diagnosis away
+  from nonce collisions.
+- **How it was fixed:** the skeptic agent ran the real bundled filter function on synthetic records and got 0 records
+  where 1 existed. That result overturned the claim.
+- **Evidence:** `../prompts/2026-10-30-session-04.md`, prompt 1.
+- **Limit:** the diagnosis was not reproduced end to end in a real extension, and wallet state was not read. The operator's
+  report that the problem stopped supports it but does not prove it.

@@ -35,17 +35,9 @@ function NoDeployment({ chainId }: { chainId?: number }) {
       </Notice>
     );
   }
-  if (chainId === 11155111) {
-    return (
-      <Notice title="No Sepolia deployment yet">
-        <p>Deploy and start the auction from the repository root (see the README for wallet setup):</p>
-        <pre>npm run deploy:sepolia{"\n"}npm run start:sepolia</pre>
-      </Notice>
-    );
-  }
   return (
     <Notice title="Unsupported network">
-      <p>Switch your wallet to the local Hardhat chain or to Sepolia.</p>
+      <p>Switch your wallet to the local Hardhat network (chain ID 31337).</p>
     </Notice>
   );
 }

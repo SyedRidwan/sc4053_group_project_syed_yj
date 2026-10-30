@@ -7,7 +7,7 @@ import {
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig, http } from "wagmi";
-import { hardhat, sepolia } from "wagmi/chains";
+import { hardhat } from "wagmi/chains";
 
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
@@ -24,10 +24,9 @@ const connectors = connectorsForWallets([{ groupName: "Wallets", wallets }], {
 
 export const config = createConfig({
   connectors,
-  chains: [hardhat, sepolia],
+  chains: [hardhat],
   transports: {
     [hardhat.id]: http("http://127.0.0.1:8545"),
-    [sepolia.id]: http(import.meta.env.VITE_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com"),
   },
 });
 

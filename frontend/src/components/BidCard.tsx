@@ -33,6 +33,8 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
   const value = parseAmount(amount);
   const invalid = amount.trim() !== "" && (value === null || value <= 0n);
   const insufficient = value !== null && balance !== undefined && value > balance.value;
+  // A bid worth less than 1 token-wei would be owed nothing (spec section 4)
+  const dust = value !== null && value > 0n && minTokens(value, price) === 0n;
   const preview = value !== null && value > 0n ? previewBid(snapshot.params, price, snapshot.totalCommitted, value) : null;
   const commitment = snapshot.account?.commitment ?? 0n;
 
@@ -42,7 +44,7 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
       openConnectModal?.();
       return;
     }
-    if (value === null || value <= 0n) return;
+    if (value === null || value <= 0n || dust) return;
     const ok = await tx.run("Bid", () =>
       writeContractAsync({
         address: deployment.auction.address,
@@ -72,7 +74,7 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
         <label className="field-label" htmlFor="bid-amount">
           ETH to commit
         </label>
-        <div className={`field${invalid || insufficient ? " field-error" : ""}`}>
+        <div className={`field${invalid || insufficient || dust ? " field-error" : ""}`}>
           <input
             id="bid-amount"
             inputMode="decimal"
@@ -87,11 +89,13 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
         <p id="bid-help" className="field-help">
           {invalid
             ? "Enter a positive amount, like 0.5"
-            : insufficient
-              ? "That is more than your wallet holds"
-              : balance
-                ? `Wallet balance: ${formatEth(balance.value, 5)}`
-                : "Connect a wallet to bid"}
+            : dust
+              ? "That is too small to buy any tokens"
+              : insufficient
+                ? "That is more than your wallet holds"
+                : balance
+                  ? `Wallet balance: ${formatEth(balance.value, 5)}`
+                  : "Connect a wallet to bid"}
         </p>
 
         {preview && !invalid && (
@@ -108,7 +112,7 @@ export function BidCard({ deployment, snapshot, price, phase, account }: Auction
           </div>
         )}
 
-        <button className="button button-primary" type="submit" disabled={Boolean(account) && (value === null || invalid || insufficient || tx.busy)}>
+        <button className="button button-primary" type="submit" disabled={Boolean(account) && (value === null || invalid || insufficient || dust || tx.busy)}>
           {!account ? "Connect wallet to bid" : tx.busy ? "Bidding…" : "Place bid"}
         </button>
       </form>

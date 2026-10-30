@@ -10,9 +10,6 @@
     "node": "hardhat node",
     "demo:local": "hardhat auction:demo --network localhost",
     "deploy:local": "hardhat auction:deploy --network localhost",
-    "deploy:sepolia": "hardhat auction:deploy --network sepolia",
-    "start:sepolia": "hardhat auction:start --network sepolia",
-    "status:sepolia": "hardhat auction:status --network sepolia",
     "frontend": "npm --prefix frontend run dev"
   },
   "devDependencies": {

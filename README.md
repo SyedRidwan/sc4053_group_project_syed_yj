@@ -21,9 +21,9 @@ The full rules, mapped clause by clause to the project brief, are in [spec.md](s
 | --- | --- |
 | `contracts/` | `DutchAuction.sol`, `HortonsToken.sol`, and the test-only `ReentrancyAttacker.sol` |
 | `test/` | Auction and token tests (unit, reentrancy, seeded random invariants) and tests for the CLI tasks |
-| `tasks/auction.js` | Hardhat tasks to deploy and operate the auction, locally or on Sepolia |
+| `tasks/auction.js` | Hardhat tasks to deploy and operate the auction on the local chain |
 | `frontend/` | React web app (Vite, wagmi, viem, RainbowKit), its unit tests and an end-to-end UI test |
-| `deployments/` | Addresses and ABIs per network, written by `auction:deploy` (`sepolia.json` is committed once deployed) |
+| `deployments/` | Addresses and ABIs, written by `auction:deploy` (git-ignored) |
 | `audit/` | AI Audit Report material: evidence logs, the AI issue log, the issues report |
 | `prompts/` | Prompt logs for each AI-assisted session |
 
@@ -78,6 +78,11 @@ npx hardhat auction:withdraw --network localhost
 To use MetaMask against the local chain, add a network with RPC `http://127.0.0.1:8545` and chain ID `31337`.
 Then import one of the test accounts printed by `npm run node`. Those keys are public; never send real funds to them.
 
+**After every restart of `npm run node`:** in MetaMask, select the local network and run Settings > Advanced >
+"Clear activity and nonce data" for each account you have used, before sending anything. Restarting resets the chain,
+so new transactions reuse the nonces of confirmed ones MetaMask still remembers. MetaMask can then show "Transaction
+failed" for a transaction that succeeded. The site's own status line reads the real result from the chain.
+
 ## Web app
 
 The frontend lives in `frontend/` and reads contract addresses from `deployments/*.json`, so it picks up every
@@ -88,8 +93,8 @@ npm --prefix frontend install    # first time only
 npm run frontend                 # http://localhost:5173
 ```
 
-With `npm run node` and `npm run demo:local` running, the page shows the live auction. Connect MetaMask (on the
-local network, chain ID 31337) or switch to Sepolia once it is deployed there. Features:
+With `npm run node` and `npm run demo:local` running, the page shows the live auction. Connect MetaMask on the
+local network (chain ID 31337). Features:
 
 - **Live price and countdown**, computed every second from chain time with the contract's own formula.
 - **A price chart** that shows the falling price, the bids so far, and the committed-capital line: the auction
@@ -98,10 +103,10 @@ local network, chain ID 31337) or switch to Sepolia once it is deployed there. F
   you receive.
 - **Your position and claims**, a **settle** button once bidding ends, and a **seller panel** to start the auction
   and withdraw proceeds.
-- **An activity feed** of every bid, settlement, claim and withdrawal, linked to Etherscan on Sepolia.
+- **An activity feed** of every bid, settlement, claim and withdrawal.
 
 Optional settings go in `frontend/.env` (see `frontend/.env.example`): a WalletConnect project ID for mobile
-wallets, and a custom Sepolia RPC URL.
+wallets.
 
 ```bash
 npm --prefix frontend test         # unit tests for the client-side auction maths
@@ -112,35 +117,6 @@ npm --prefix frontend run e2e      # full lifecycle through the UI (needs the no
 The end-to-end test deploys a fresh auction and drives it through headless Edge or Chrome with an injected test
 wallet: the seller starts it, a bidder bids, a second bid sells it out with a refund, the bidder claims, and the
 seller withdraws.
-
-## Sepolia testnet
-
-1. **Create a throwaway wallet** in MetaMask, used only for this project. Never use a wallet that holds real funds.
-2. **Fund it** with Sepolia test ETH from a faucet, such as Google Cloud's Web3 faucet. About 0.05 ETH is enough.
-3. **Get an Etherscan API key** at etherscan.io (My Account → API Keys), for contract verification.
-4. **Store the secrets** in Hardhat's per-user vars store. They are kept outside this repository:
-
-   ```bash
-   npx hardhat vars set SEPOLIA_PRIVATE_KEY     # the throwaway wallet's private key
-   npx hardhat vars set ETHERSCAN_API_KEY
-   npx hardhat vars set SEPOLIA_RPC_URL         # optional; defaults to a public Sepolia RPC
-   ```
-
-5. **Deploy, verify and start:**
-
-   ```bash
-   npm run deploy:sepolia    # deploys both contracts, verifies them on Etherscan, writes deployments/sepolia.json
-   npm run start:sepolia     # approves the supply and starts the 20-minute clock
-   npm run status:sepolia
-   ```
-
-Faucets give out little ETH, so Sepolia prices default to a 0.00005 ETH start and a 0.00001 ETH reserve for
-1,000 TIM. Selling out then costs between 0.01 and 0.05 ETH. Override the defaults with
-`--supply`, `--start-price` and `--reserve-price` on `auction:deploy`. The other tasks work on Sepolia too,
-except `auction:advance` and `auction:demo`, because real chain time cannot be skipped.
-
-Commit `deployments/sepolia.json` after deploying. It records the addresses, transaction hashes and ABIs that the
-frontend and the audit report refer to.
 
 ## How the brief's "tricky points" are handled
 
