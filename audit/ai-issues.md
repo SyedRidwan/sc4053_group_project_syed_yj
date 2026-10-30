@@ -31,6 +31,9 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 | AI-17 | Race in the frontend's transaction hook: a new bid typed just after "Bid confirmed" was wiped, making CI flaky | Medium | 01 | Fixed |
 | AI-18 | Offered a stale block tracker as the likely cause of a false MetaMask error before testing it | Low | 04 | Fixed |
 | AI-19 | A code-reading agent stated that MetaMask never reuses a confirmed nonce, from a truncated read | Medium | 04 | Fixed |
+| AI-20 | Prototype factory's parameter bounds allowed a nearly flat curve, instant dust sell-outs and a 1 wei reserve | High | 04 | Fixed |
+| AI-21 | Prototype's seller forward had no `nonReentrant`, against the project's own spec | Medium | 04 | Fixed |
+| AI-22 | Wrote tests that could not fail: a swallowed assertion and two tests blind to their own mutation | Medium | 04 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -263,3 +266,39 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 - **Evidence:** `../prompts/2026-10-30-session-04.md`, prompt 1.
 - **Limit:** the diagnosis was not reproduced end to end in a real extension, and wallet state was not read. The operator's
   report that the problem stopped supports it but does not prove it.
+
+## AI-20: Weak bounds in the factory prototype
+
+- **Why the AI made the mistake:** the prototype's first draft set each bound only to stop a revert or an overflow, such
+  as `reservePrice > 0` and a 1200 wei minimum decay. It tested whether the code ran, not whether the result still met
+  the brief. Its fuzz test also clustered reserves at high values, so low prices were rarely reached.
+- **Why it is problematic:** `start = reserve + 1200 wei` is effectively a flat-price sale, against "descending price". A
+  1-token listing at 1 gwei could sell out on the first bid, seconds after creation, against the spirit of "exactly 20
+  minutes". A 1 wei reserve misreported the clearing price by 50%.
+- **How it was fixed:** a separate strict-marker agent read the code against the brief and flagged these before any
+  of it reached the repository. The real factory requires `start ≥ 2 × reserve`, `reserve ≥ 1 gwei` and a 0.001 ETH minimum
+  raise. The fuzz test now spreads reserves across the whole range.
+- **Evidence:** `contracts/LaunchFactory.sol`, the "Parameter bounds" tests in `test/LaunchFactory.test.js`, and mutations M6
+  to M8 in `evidence/2026-10-30-launchpad-mutations.txt`.
+
+## AI-21: Missing reentrancy guard on the forward
+
+- **Why the AI made the mistake:** the prototype's `withdrawProceeds` sent ETH to the seller without `nonReentrant`. Its
+  re-entry test passed anyway, because the auction's own "Already withdrawn" check blocked the same-launch replay, so the
+  AI treated the guard as unnecessary.
+- **Why it is problematic:** `spec.md` section 5 requires `nonReentrant` on every ETH-moving function. A contract seller
+  could also have re-entered to withdraw a second launch in the middle of the first.
+- **How it was fixed:** added the guard, and a test that re-enters for a different launch.
+- **Evidence:** mutation M2 survived until that test was added, then failed 1 test
+  (`evidence/2026-10-30-launchpad-mutations.txt`).
+
+## AI-22: Tests that could not fail
+
+- **Why the AI made the mistake:** in the first draft of `test/LaunchFactory.test.js`, it could not know the new addresses
+  in advance, so it wrapped the event assertion in `.catch(() => {})`. It also gave a dust assertion escape clauses so it
+  would pass. Separately, the page-size test used exactly the clamp's size.
+- **Why it is problematic:** this repeats AI-7: tests that pass for the wrong reason give false confidence, which is what
+  this audit exists to catch.
+- **How it was fixed:** the AI caught the first two on self-review, before running them, and rewrote them with exact
+  values. Mutation testing caught the third (M13).
+- **Evidence:** `test/LaunchFactory.test.js`, `evidence/2026-10-30-launchpad-mutations.txt`.

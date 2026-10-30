@@ -8,8 +8,7 @@ coverage.json
 .env
 .DS_Store
 
-# Local deployments change on every run; deployments/sepolia.json is committed
-deployments/hardhat.json
-deployments/localhost.json
+# Local deployments change on every run
+deployments/*.json
 frontend/e2e/screenshots/
 frontend/package-lock.json

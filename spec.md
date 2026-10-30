@@ -1,4 +1,4 @@
-# System Specification v2: Dutch Auction Token Launch (SC4053 Option 2)
+# System Specification v3: Horton's Launchpad, Dutch Auction Token Launches (SC4053 Option 2)
 
 > v1 (commit `138f1ce`) was written by hand before any AI tool was used; v2 was drafted with Claude Code
 > (session 01, see `prompts/`) from the brief and v1. v1 allocated tokens at each bid's own price. That contradicts the brief's clearing rule
@@ -7,6 +7,8 @@
 > The second implementation in this repository (`dutch-auction-token-launch`) used the same per-bid rule; on the same bids it
 > settled at the reserve where v2 sells out at three times that price (`audit/evidence/2026-10-28-branch-comparison.md`).
 
+> v3 (session 04) adds `LaunchFactory.sol`, so that anyone can launch a token through the same auction. Sections 1 to 5
+> below describe one launch and still apply unchanged to every listing. Section 6 describes the launchpad.
 ## 1. System Scope
 Ethereum token launch where tokens are bid for with Ether and distributed by a uniform clearing price Dutch auction
 over a 20-minute window.
@@ -57,3 +59,32 @@ over a 20-minute window.
 - `SafeERC20` for all token transfers; burn with `ERC20Burnable.burn`, never by transfer to `address(0)`.
 - Never send `address(this).balance`; pay only computed, tracked amounts.
 - Tests assert ETH and token balances, events, reverts and invariants, not only token balances.
+
+## 6. Launchpad (v3)
+
+`LaunchFactory.sol` lets anyone create a token and its auction in one transaction. `DutchAuction.sol` and
+`HortonsToken.sol` are unchanged, and a test compares the factory's deployed code with a direct deployment.
+
+| Rule | How it is enforced |
+| --- | --- |
+| One launch = one token + one auction | `createLaunch` deploys both, moves the whole supply into the auction and starts it. Auctions share no state. |
+| Exactly 20 minutes and a linear curve, always | `DURATION` is a constant, and `createLaunch` takes only name, symbol, supply, start price and reserve price. |
+| Factory-made tokens only | There is no token input. In the prototype, 5 of 5 unusual external tokens misbehaved, and a non-burnable one locked ETH permanently. |
+| The price really descends | `startPrice ≥ 2 × reservePrice` and `reservePrice ≥ 1 gwei`. |
+| No instant dust sell-outs | `supply × reservePrice / 1e18 ≥ 0.001 ETH`. |
+| Values stay in range | `1 ≤ whole tokens ≤ 1e15`, `startPrice ≤ 1000 ETH`, name ≤ 32 bytes, symbol ≤ 11 bytes. |
+| Seller is paid correctly | The factory is the on-chain seller, so `withdrawProceeds(id)` checks the registered seller and forwards exactly `totalCommitted`, under `nonReentrant`. |
+| Curator's power is limited | The curator can only set `hidden` and `verified`, which no auction reads. A test traces these calls and finds no external call. There is no pause and no upgrade path. |
+
+**Roles.** There are no accounts and no logins: the wallet is the identity. A seller is whoever created a listing, a
+bidder is whoever has committed to one, and the curator is one fixed address. One wallet can be seller and bidder.
+
+**Hidden listings.** Hiding removes a listing from the market page only. Its auction keeps running and its page still
+works, so hiding can never trap a bidder's funds.
+
+**Early end.** A listing can end before 20 minutes only by selling out, which is the brief's clearing rule. The minimum
+raise stops this from happening on a trivially small bid.
+
+**Known limits.** Anyone can create a listing, so names can mislead; the site shows each address and the curator's
+verified badge. A seller can bid on their own listing, which no on-chain rule can prevent. Each listing's token contract
+is named `HortonsToken` whatever the coin is called, because reusing the contract unchanged keeps its test evidence valid.

@@ -1,5 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("./tasks/auction");
+require("./tasks/launchpad");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {

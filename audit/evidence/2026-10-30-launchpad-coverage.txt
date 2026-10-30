@@ -1,0 +1,147 @@
+﻿
+Version
+=======
+> solidity-coverage: v0.8.17
+
+Instrumenting for coverage...
+=============================
+
+> DutchAuction.sol
+> HortonsToken.sol
+> LaunchFactory.sol
+
+Coverage skipped for:
+=====================
+
+> LaunchTestHelpers.sol
+> ReentrancyAttacker.sol
+
+Compilation:
+============
+
+Compiled 18 Solidity files successfully (evm target: paris).
+
+Network Info
+============
+> HardhatEVM: v2.29.1
+> network:    hardhat
+
+
+
+  DutchAuction
+    Deployment and start
+      √ rejects invalid constructor parameters (154ms)
+      √ does not accept bids before start, and quotes the start price
+      √ start() pulls the full sale supply and opens a 20-minute window (50ms)
+      √ start() is seller-only, single-use and requires token approval
+    Price decay
+      √ decays linearly with no truncation drift (99ms)
+      √ never increases and never drops below the reserve price (49ms)
+    Bidding and clearing
+      √ records committed ETH without fixing a per-bid price
+      √ rejects zero bids and bids after the window closes
+      √ clears the moment committed capital meets total supply (brief: uniform clearing price) (50ms)
+      √ caps a bid that bridges the threshold and refunds its surplus in the same transaction (61ms)
+      √ charges every winning bidder the same clearing price (58ms)
+      √ sells out on committed capital where per-bid allocation would settle at the reserve (60ms)
+    Expiry and burning
+      √ settles at the reserve price and burns unsold tokens from totalSupply (39ms)
+      √ burns the whole supply when nobody bids
+    Claims
+      √ finalizes automatically on the first claim after expiry
+      √ rejects early, repeated and empty claims (88ms)
+      √ never pays out more than tokensSold when the clearing price rounds down (80ms)
+    Seller proceeds
+      √ pays the seller exactly the committed ETH, once, without touching bidders' tokens (108ms)
+    Security: reentrancy (bonus)
+      √ blocks every re-entry from the refund callback and pays only the fair share (120ms)
+      √ reverts the whole bid when a bidder rejects its refund, leaving state unchanged (42ms)
+    Invariants (seeded random auctions)
+      √ holds all spec invariants for seed 1 (135ms)
+      √ holds all spec invariants for seed 2 (196ms)
+      √ holds all spec invariants for seed 3 (142ms)
+      √ holds all spec invariants for seed 4 (238ms)
+      √ holds all spec invariants for seed 5 (93ms)
+      √ holds all spec invariants for seed 6 (197ms)
+      √ holds all spec invariants for seed 7 (111ms)
+      √ holds all spec invariants for seed 8 (219ms)
+      √ holds all spec invariants for seed 9 (117ms)
+      √ holds all spec invariants for seed 10 (194ms)
+
+  HortonsToken
+    √ has the configured name and symbol, and 18 decimals
+    √ mints the whole initial supply to the deployer, once
+    √ permanently reduces totalSupply when a holder burns
+    √ does not let anyone burn tokens they neither hold nor were approved for
+
+  LaunchFactory
+    createLaunch
+      √ moves the whole supply into a running auction and leaves the factory with nothing (86ms)
+      √ runs the same contract code as a directly deployed auction and token (101ms)
+      √ emits LaunchCreated with the seller, token and auction (50ms)
+    Parameter bounds
+      √ rejects an empty name
+      √ rejects a name over 32 bytes
+      √ rejects an empty symbol
+      √ rejects a symbol over 11 bytes
+      √ rejects zero supply
+      √ rejects a supply under 1 token
+      √ rejects a huge supply
+      √ rejects a zero reserve
+      √ rejects a reserve under 1 gwei
+      √ rejects a start price over the cap
+      √ rejects a start equal to the reserve
+      √ rejects a nearly flat price curve
+      √ rejects a raise under 0.001 ETH
+      √ accepts the extremes of the allowed range, with the price maths intact (160ms)
+    Duration and curve
+      √ gives every launch exactly 1200 seconds, and sellers have no duration or curve input (140ms)
+      √ cannot be restarted or changed by the seller after creation (49ms)
+    Isolation of concurrent auctions
+      √ a full lifecycle on one launch changes nothing on another, and the reverse (332ms)
+      √ burns and totalSupply move independently per launch (137ms)
+      √ pays one seller's two launches exactly their own amounts (125ms)
+    Withdrawing proceeds
+      √ pays only the registered seller, once, and emits ProceedsForwarded (154ms)
+      √ cannot withdraw before the auction settles (60ms)
+      √ rejects plain ETH from anyone but its own auctions
+      √ never pays out ETH forced into the factory or an auction (116ms)
+    Reentrancy
+      √ the refund attacker gets no successful re-entry on a factory launch (100ms)
+      √ a reentrant seller collects once and cannot reach a neighbour's ETH (119ms)
+      √ a seller cannot re-enter the factory to withdraw a second launch mid-withdrawal (134ms)
+      √ a seller that rejects ETH blocks only its own withdrawal (79ms)
+    Listing views
+      √ pages through 51 listings and clamps the page size to 50 (6484ms)
+      √ reports a row's live state and an account's positions across listings (222ms)
+    Curator
+      √ is the only one who can hide or verify, and the role cannot be reassigned (145ms)
+      √ rejects a zero curator at deployment
+      √ curator transactions make no external call and write only to the factory (execution trace) (331ms)
+      √ cannot move funds or stop an auction by direct calls (95ms)
+      √ hiding is not a freeze: a hidden auction runs its whole lifecycle (112ms)
+    Seeded random launches inside the bounds
+      √ keeps spec section 4 across concurrent auctions (13101ms)
+
+  Hardhat auction tasks
+    √ auction:deploy records addresses, parameters and ABIs for the frontend (210ms)
+    √ auction:demo --scenario soldout settles at 0.06 ETH and pays everyone (458ms)
+    √ auction:demo --scenario expiry settles at the reserve and burns the rest (367ms)
+    √ auction:demo --scenario live leaves an active auction with 25 ETH committed (379ms)
+    √ rejects unknown scenarios
+
+
+  77 passing (28s)
+
+--------------------|----------|----------|----------|----------|----------------|
+File                |  % Stmts | % Branch |  % Funcs |  % Lines |Uncovered Lines |
+--------------------|----------|----------|----------|----------|----------------|
+ contracts\         |      100 |    98.04 |      100 |      100 |                |
+  DutchAuction.sol  |      100 |    96.97 |      100 |      100 |                |
+  HortonsToken.sol  |      100 |      100 |      100 |      100 |                |
+  LaunchFactory.sol |      100 |      100 |      100 |      100 |                |
+--------------------|----------|----------|----------|----------|----------------|
+All files           |      100 |    98.04 |      100 |      100 |                |
+--------------------|----------|----------|----------|----------|----------------|
+
+> Istanbul reports written to ./coverage/ and ./coverage.json

@@ -344,6 +344,8 @@ task("auction:export-abi", "Writes typed ABIs for the frontend to frontend/src/a
     "",
     `export const hortonsTokenAbi = ${await abiFor("HortonsToken")} as const;`,
     "",
+    `export const launchFactoryAbi = ${await abiFor("LaunchFactory")} as const;`,
+    "",
   ].join("\n");
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, source);

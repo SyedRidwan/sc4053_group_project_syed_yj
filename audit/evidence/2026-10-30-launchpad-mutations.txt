@@ -1,0 +1,16 @@
+﻿M1 no seller check on withdraw: 2 failing
+M2 no nonReentrant on withdraw: 0 failing
+M3 pays caller balance not tracked amount: 1 failing
+M4 no curator check on setHidden: 1 failing
+M5 no curator check on setVerified: 1 failing
+M6 no reserve floor: 2 failing
+M7 no ratio bound: 2 failing
+M8 no minimum raise: 1 failing
+M9 receive accepts anyone: 1 failing
+M10 registers factory as seller: 11 failing
+M11 start omitted: 18 failing
+M12 no event on forward: 1 failing
+M13 page size not clamped: 0 failing
+M14 positions report wrong account: 1 failing
+M2 no nonReentrant on withdraw (after adding a test): 1 failing
+M13 page size not clamped (after adding a test): 1 failing

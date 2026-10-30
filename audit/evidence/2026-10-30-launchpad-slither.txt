@@ -1,0 +1,132 @@
+﻿'npx hardhat clean' running (wd: C:\Users\syedr\OneDrive\Documents\GitHub\sc4053_group_project_syed_yj)
+'npx hardhat clean --global' running (wd: C:\Users\syedr\OneDrive\Documents\GitHub\sc4053_group_project_syed_yj)
+'npx hardhat compile --force' running (wd: C:\Users\syedr\OneDrive\Documents\GitHub\sc4053_group_project_syed_yj)
+slither : INFO:Detectors:
+At line:3 char:1
++ slither . --filter-paths "node_modules|ReentrancyAttacker|LaunchTestH ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO:Detectors::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Detector: incorrect-equality
+DutchAuction.bid() (contracts/DutchAuction.sol#100-121) uses a dangerous strict equality:
+	- accepted == room (contracts/DutchAuction.sol#113)
+DutchAuction.currentPrice() (contracts/DutchAuction.sol#76-86) uses a dangerous strict equality:
+	- startTime == 0 (contracts/DutchAuction.sol#77)
+DutchAuction.tokensOf(address) (contracts/DutchAuction.sol#131-137) uses a dangerous strict equality:
+	- ! finalized || totalCommitted == 0 (contracts/DutchAuction.sol#132)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+INFO:Detectors:
+Detector: unused-return
+LaunchFactory.createLaunch(string,string,uint256,uint256,uint256) (contracts/LaunchFactory.sol#96-121) ignores return 
+value by token.approve(address(auction),supply) (contracts/LaunchFactory.sol#119)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+INFO:Detectors:
+Detector: calls-loop
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.name = 
+token.name() (contracts/LaunchFactory.sol#208)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.symbol = 
+token.symbol() (contracts/LaunchFactory.sol#209)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.supply = 
+auction.totalTokens() (contracts/LaunchFactory.sol#210)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.startPrice = 
+auction.startPrice() (contracts/LaunchFactory.sol#211)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.reservePrice 
+= auction.reservePrice() (contracts/LaunchFactory.sol#212)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.currentPrice 
+= auction.currentPrice() (contracts/LaunchFactory.sol#213)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: 
+v.totalCommitted = auction.totalCommitted() (contracts/LaunchFactory.sol#214)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.clearingPrice 
+= auction.clearingPrice() (contracts/LaunchFactory.sol#215)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.startTime = 
+auction.startTime() (contracts/LaunchFactory.sol#216)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.endTime = 
+auction.endTime() (contracts/LaunchFactory.sol#217)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: v.finalized = 
+auction.finalized() (contracts/LaunchFactory.sol#218)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory._viewOf(uint256) (contracts/LaunchFactory.sol#197-220) has external calls inside a loop: 
+v.proceedsWithdrawn = auction.proceedsWithdrawn() (contracts/LaunchFactory.sol#219)
+	Calls stack containing the loop:
+		LaunchFactory.getLaunches(uint256,uint256)
+LaunchFactory.getPositions(address,uint256,uint256) (contracts/LaunchFactory.sol#171-188) has external calls inside a 
+loop: page[i] = PositionView(offset + i,auction.commitments(account),auction.tokensOf(account),auction.claimed(account)
+,HortonsToken(launch.token).balanceOf(account)) (contracts/LaunchFactory.sol#180-186)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+INFO:Detectors:
+Detector: reentrancy-benign
+Reentrancy in DutchAuction.claim() (contracts/DutchAuction.sol#140-154):
+	External calls:
+	- _finalize() (contracts/DutchAuction.sol#143)
+		- token.burn(unsold) (contracts/DutchAuction.sol#186)
+	State variables written after the call(s):
+	- claimed[msg.sender] = true (contracts/DutchAuction.sol#150)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+INFO:Detectors:
+Detector: timestamp
+DutchAuction.start() (contracts/DutchAuction.sol#65-73) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(startTime == 0,Already started) (contracts/DutchAuction.sol#66)
+DutchAuction.currentPrice() (contracts/DutchAuction.sol#76-86) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime == 0 (contracts/DutchAuction.sol#77)
+	- block.timestamp >= endTime (contracts/DutchAuction.sol#80)
+DutchAuction.soldOut() (contracts/DutchAuction.sol#89-91) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 && totalCommitted >= (totalTokens * currentPrice()) / TOKEN_UNIT (contracts/DutchAuction.sol#90)
+DutchAuction.isActive() (contracts/DutchAuction.sol#94-96) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 && block.timestamp < endTime && ! finalized && ! soldOut() (contracts/DutchAuction.sol#95)
+DutchAuction.bid() (contracts/DutchAuction.sol#100-121) uses timestamp for comparisons
+	Dangerous comparisons:
+	- accepted == room (contracts/DutchAuction.sol#113)
+	- refund > 0 (contracts/DutchAuction.sol#117)
+	- require(bool,string)(ok,Refund failed) (contracts/DutchAuction.sol#119)
+	- msg.value < room (contracts/DutchAuction.sol#106)
+DutchAuction.tokensOf(address) (contracts/DutchAuction.sol#131-137) uses timestamp for comparisons
+	Dangerous comparisons:
+	- ! finalized || totalCommitted == 0 (contracts/DutchAuction.sol#132)
+DutchAuction.claim() (contracts/DutchAuction.sol#140-154) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(amount > 0,Nothing to claim) (contracts/DutchAuction.sol#148)
+DutchAuction._canFinalize() (contracts/DutchAuction.sol#169-171) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 && (block.timestamp >= endTime || soldOut()) (contracts/DutchAuction.sol#170)
+DutchAuction._finalize() (contracts/DutchAuction.sol#174-188) uses timestamp for comparisons
+	Dangerous comparisons:
+	- unsold > 0 (contracts/DutchAuction.sol#185)
+	- impliedPrice > reservePrice (contracts/DutchAuction.sol#178)
+	- sold < totalTokens (contracts/DutchAuction.sol#181)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: low-level-calls
+Low level call in DutchAuction.bid() (contracts/DutchAuction.sol#100-121):
+	- (ok,None) = address(msg.sender).call{value: refund}() (contracts/DutchAuction.sol#118)
+Low level call in DutchAuction.withdrawProceeds() (contracts/DutchAuction.sol#157-167):
+	- (ok,None) = address(seller).call{value: amount}() (contracts/DutchAuction.sol#165)
+Low level call in LaunchFactory.withdrawProceeds(uint256) (contracts/LaunchFactory.sol#124-135):
+	- (ok,None) = address(launch.seller).call{value: amount}() (contracts/LaunchFactory.sol#133)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+INFO:Slither:. analyzed (20 contracts with 102 detectors), 30 result(s) found

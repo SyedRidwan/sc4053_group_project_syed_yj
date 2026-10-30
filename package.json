@@ -8,8 +8,8 @@
     "coverage": "hardhat coverage",
     "slither": "slither . --filter-paths node_modules",
     "node": "hardhat node",
-    "demo:local": "hardhat auction:demo --network localhost",
-    "deploy:local": "hardhat auction:deploy --network localhost",
+    "seed": "hardhat launchpad:seed --network localhost",
+    "demo": "node scripts/demo.js",
     "frontend": "npm --prefix frontend run dev"
   },
   "devDependencies": {

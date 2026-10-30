@@ -43,9 +43,9 @@ jobs:
           python-version: "3.12"
       - run: npm ci
       - run: pip install slither-analyzer==0.11.6
-      # Fails on any high-severity finding. ReentrancyAttacker is a deliberately reentrant test
-      # contract; the remaining findings are triaged in audit/evidence/2026-10-22-findings.md.
-      - run: slither . --filter-paths "node_modules|ReentrancyAttacker" --fail-high
+      # Fails on any high-severity finding. ReentrancyAttacker and LaunchTestHelpers are deliberately
+      # reentrant test contracts; the rest are triaged in audit/evidence/2026-10-30-launchpad-findings.md.
+      - run: slither . --filter-paths "node_modules|ReentrancyAttacker|LaunchTestHelpers" --fail-high
 
   frontend:
     name: Frontend unit tests and build
@@ -85,8 +85,8 @@ jobs:
           npx hardhat node > node.log 2>&1 &
           for i in $(seq 1 60); do curl -sf -X POST -H 'content-type: application/json' \
             -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' http://127.0.0.1:8545 && break; sleep 1; done
-      # Deploy once before Vite starts, so deployments/localhost.json exists when the app first loads
-      - run: npx hardhat auction:deploy --network localhost
+      # Deploy once before Vite starts, so the deployment file exists when the app first loads
+      - run: npx hardhat launchpad:deploy --network localhost
       - name: Start the app
         run: |
           npm --prefix frontend run dev -- --port 5173 --strictPort > vite.log 2>&1 &
