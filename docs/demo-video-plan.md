@@ -5,11 +5,13 @@ solution. The timings below leave about 30 seconds spare.
 
 ## Before recording
 
-1. Stop anything on ports 8545 and 5173, then run `npm run demo -- --expires-in 480`. Nova now expires 8 minutes later, so
-   it runs out during the demo. If your intro runs differently, change this number.
+1. Stop anything on ports 8545 and 5173, then run `npm run demo -- --expires-in 600`. Nova's 10-minute countdown starts
+   when seeding finishes, not when you start recording.
 2. In MetaMask, on the local network, run "Clear activity and nonce data" for accounts #0, #1 and #3.
 3. Connect each account to the site once, so no connection prompts appear on camera.
-4. Keep a full rehearsal in the same order. A retake needs a fresh `npm run demo` and step 2 again.
+4. Start recording about 2 minutes after seeding finishes, so Nova expires near 8:00 in the video. Nova's page shows the time
+   left, so check it before you start.
+5. Rehearse the whole run first. A retake needs a fresh `npm run demo` and step 2 again.
 
 ## Run sheet
 
