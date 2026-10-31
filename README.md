@@ -24,7 +24,7 @@ Each run starts from a fresh chain with six listings:
 | Listing | State |
 | --- | --- |
 | Horton's (TIM) | Live, verified, with the full 20 minutes left. This is the main listing. |
-| Nova (NOVA) | Live, and expires about 4 minutes after seeding, so you can watch the burn. Change this with `npm run demo -- --expires-in 300`. |
+| Nova (NOVA) | Live, and expires about 4 minutes after seeding, so you can watch the burn. Change this with `npm run demo -- --expires-in 300` (30 to 600 seconds). |
 | Meridian (MRD) | Live and about halfway through, with room for a bid to sell it out and be refunded. |
 | Free Money (FREE) | Live and misleading, for the curator to hide. |
 | Aurora (AUR) | Sold out and settled, with proceeds waiting for its seller. |
@@ -99,7 +99,7 @@ The site has light and dark themes, and starts with your system's preference.
 ## Tests
 
 ```bash
-npm test                            # 81 contract tests
+npm test                            # 87 contract tests
 npm run coverage                    # 100% lines; 98% branches
 npm run slither                     # needs Slither (pip install slither-analyzer)
 npm --prefix frontend test          # 39 frontend unit tests

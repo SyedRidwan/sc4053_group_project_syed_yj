@@ -1,0 +1,228 @@
+
+Version
+=======
+> solidity-coverage: v0.8.17
+
+Instrumenting for coverage...
+=============================
+
+> DutchAuction.sol
+> HortonsToken.sol
+> LaunchFactory.sol
+
+Coverage skipped for:
+=====================
+
+> LaunchTestHelpers.sol
+> ReentrancyAttacker.sol
+
+Compilation:
+============
+
+Compiled 18 Solidity files successfully (evm target: paris).
+
+Network Info
+============
+> HardhatEVM: v2.29.1
+> network:    hardhat
+
+
+
+  DutchAuction
+    Deployment and start
+      ✔ rejects invalid constructor parameters (128ms)
+      ✔ does not accept bids before start, and quotes the start price
+      ✔ start() pulls the full sale supply and opens a 20-minute window (42ms)
+      ✔ start() is seller-only, single-use and requires token approval
+    Price decay
+      ✔ decays linearly with no truncation drift (40ms)
+      ✔ never increases and never drops below the reserve price
+    Bidding and clearing
+      ✔ records committed ETH without fixing a per-bid price
+      ✔ rejects zero bids and bids after the window closes
+      ✔ clears the moment committed capital meets total supply (brief: uniform clearing price) (46ms)
+      ✔ caps a bid that bridges the threshold and refunds its surplus in the same transaction
+      ✔ charges every winning bidder the same clearing price (39ms)
+      ✔ sells out on committed capital where per-bid allocation would settle at the reserve (39ms)
+    Expiry and burning
+      ✔ settles at the reserve price and burns unsold tokens from totalSupply
+      ✔ burns the whole supply when nobody bids
+    Claims
+      ✔ finalizes automatically on the first claim after expiry
+      ✔ rejects early, repeated and empty claims (55ms)
+      ✔ never pays out more than tokensSold when the clearing price rounds down (51ms)
+    Seller proceeds
+      ✔ pays the seller exactly the committed ETH, once, without touching bidders' tokens (58ms)
+    Security: reentrancy (bonus)
+      ✔ blocks every re-entry from the refund callback and pays only the fair share (92ms)
+      ✔ reverts the whole bid when a bidder rejects its refund, leaving state unchanged (40ms)
+    Invariants (seeded random auctions)
+      ✔ holds all spec invariants for seed 1 (97ms)
+      ✔ holds all spec invariants for seed 2 (99ms)
+      ✔ holds all spec invariants for seed 3 (84ms)
+      ✔ holds all spec invariants for seed 4 (120ms)
+      ✔ holds all spec invariants for seed 5 (54ms)
+      ✔ holds all spec invariants for seed 6 (132ms)
+      ✔ holds all spec invariants for seed 7 (56ms)
+      ✔ holds all spec invariants for seed 8 (95ms)
+      ✔ holds all spec invariants for seed 9 (64ms)
+      ✔ holds all spec invariants for seed 10 (133ms)
+
+  HortonsToken
+    ✔ has the configured name and symbol, and 18 decimals
+    ✔ mints the whole initial supply to the deployer, once
+    ✔ permanently reduces totalSupply when a holder burns
+    ✔ does not let anyone burn tokens they neither hold nor were approved for
+
+  LaunchFactory
+    createLaunch
+      ✔ moves the whole supply into a running auction and leaves the factory with nothing (53ms)
+      ✔ runs the same contract code as a directly deployed auction and token (55ms)
+      ✔ emits LaunchCreated with the seller, token and auction
+    Parameter bounds
+      ✔ rejects an empty name
+      ✔ rejects a name over 32 bytes
+      ✔ rejects an empty symbol
+      ✔ rejects a symbol over 11 bytes
+      ✔ rejects zero supply
+      ✔ rejects a supply under 1 token
+      ✔ rejects a huge supply
+      ✔ rejects a zero reserve
+      ✔ rejects a reserve under 1 gwei
+      ✔ rejects a start price over the cap
+      ✔ rejects a start equal to the reserve
+      ✔ rejects a nearly flat price curve
+      ✔ rejects a raise under 0.001 ETH
+      ✔ accepts the extremes of the allowed range, with the price maths intact (118ms)
+    Duration and curve
+      ✔ gives every launch exactly 1200 seconds, and sellers have no duration or curve input (139ms)
+      ✔ cannot be restarted or changed by the seller after creation (56ms)
+    Isolation of concurrent auctions
+      ✔ a full lifecycle on one launch changes nothing on another, and the reverse (170ms)
+      ✔ burns and totalSupply move independently per launch (70ms)
+      ✔ pays one seller's two launches exactly their own amounts (90ms)
+    Withdrawing proceeds
+      ✔ pays only the registered seller, once, and emits ProceedsForwarded (101ms)
+      ✔ cannot withdraw before the auction settles
+      ✔ rejects plain ETH from anyone but its own auctions
+      ✔ never pays out ETH forced into the factory or an auction (81ms)
+    Reentrancy
+      ✔ the refund attacker gets no successful re-entry on a factory launch (58ms)
+      ✔ a reentrant seller collects once and cannot reach a neighbour's ETH (145ms)
+      ✔ a seller cannot re-enter the factory to withdraw a second launch mid-withdrawal (173ms)
+      ✔ a seller that rejects ETH blocks only its own withdrawal (119ms)
+    Gas limit for bids
+      ✔ a bid estimated as a plain bid runs out of gas on the sell-out path, even at twice the estimate (262ms)
+      ✔ the site's fixed limit covers that bid, and the surplus still comes back (191ms)
+    Listing views
+      ✔ pages through 51 listings and clamps the page size to 50 (4691ms)
+      ✔ reports a row's live state and an account's positions across listings (184ms)
+    Curator
+      ✔ is the only one who can hide or verify, and the role cannot be reassigned (102ms)
+      ✔ rejects a zero curator at deployment
+      ✔ curator transactions make no external call and write only to the factory (execution trace) (177ms)
+      ✔ cannot move funds or stop an auction by direct calls (62ms)
+      ✔ hiding is not a freeze: a hidden auction runs its whole lifecycle (68ms)
+    Seeded random launches inside the bounds
+      ✔ keeps spec section 4 across concurrent auctions (9470ms)
+
+  Hardhat launchpad tasks
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+    ✔ launchpad:deploy records the factory and curator for the frontend (115ms)
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Creating listings:
+  #0 Aurora (AUR)
+  #1 Cobalt (COB)
+  #2 Nova (NOVA)
+  #3 Meridian (MRD)
+  #4 Free Money (FREE)
+  #5 Horton's (TIM)
+
+Seeded 6 listings. Nova expires in about 240 seconds.
+    ✔ launchpad:seed fills the market with listings in every state (940ms)
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Creating listings:
+  #0 Aurora (AUR)
+  #1 Cobalt (COB)
+  #2 Nova (NOVA)
+  #3 Meridian (MRD)
+  #4 Free Money (FREE)
+  #5 Horton's (TIM)
+
+Seeded 6 listings. Nova expires in about 240 seconds.
+    ✔ Nova burns its unsold supply once it expires (906ms)
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Creating listings:
+  #0 Aurora (AUR)
+  #1 Cobalt (COB)
+  #2 Nova (NOVA)
+  #3 Meridian (MRD)
+  #4 Free Money (FREE)
+  #5 Horton's (TIM)
+
+Seeded 6 listings. Nova expires in about 30 seconds.
+    ✔ launchpad:seed leaves Nova live for 30 seconds (932ms)
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Creating listings:
+  #0 Aurora (AUR)
+  #1 Cobalt (COB)
+  #2 Nova (NOVA)
+  #3 Meridian (MRD)
+  #4 Free Money (FREE)
+  #5 Horton's (TIM)
+
+Seeded 6 listings. Nova expires in about 360 seconds.
+    ✔ launchpad:seed leaves Nova live for 360 seconds (882ms)
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Creating listings:
+  #0 Aurora (AUR)
+  #1 Cobalt (COB)
+  #2 Nova (NOVA)
+  #3 Meridian (MRD)
+  #4 Free Money (FREE)
+  #5 Horton's (TIM)
+
+Seeded 6 listings. Nova expires in about 361 seconds.
+    ✔ launchpad:seed leaves Nova live for 361 seconds (934ms)
+LaunchFactory: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Curator:       0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Creating listings:
+  #0 Aurora (AUR)
+  #1 Cobalt (COB)
+  #2 Nova (NOVA)
+  #3 Meridian (MRD)
+  #4 Free Money (FREE)
+  #5 Horton's (TIM)
+
+Seeded 6 listings. Nova expires in about 600 seconds.
+    ✔ launchpad:seed leaves Nova live for 600 seconds (950ms)
+    ✔ launchpad:seed rejects an expiry too close or too far
+
+  Hardhat auction tasks
+    ✔ auction:deploy records addresses, parameters and ABIs for the frontend (152ms)
+    ✔ auction:demo --scenario soldout settles at 0.06 ETH and pays everyone (444ms)
+    ✔ auction:demo --scenario expiry settles at the reserve and burns the rest (279ms)
+    ✔ auction:demo --scenario live leaves an active auction with 25 ETH committed (256ms)
+    ✔ rejects unknown scenarios
+
+
+  87 passing (26s)
+
+--------------------|----------|----------|----------|----------|----------------|
+File                |  % Stmts | % Branch |  % Funcs |  % Lines |Uncovered Lines |
+--------------------|----------|----------|----------|----------|----------------|
+ contracts\         |      100 |    98.04 |      100 |      100 |                |
+  DutchAuction.sol  |      100 |    96.97 |      100 |      100 |                |
+  HortonsToken.sol  |      100 |      100 |      100 |      100 |                |
+  LaunchFactory.sol |      100 |      100 |      100 |      100 |                |
+--------------------|----------|----------|----------|----------|----------------|
+All files           |      100 |    98.04 |      100 |      100 |                |
+--------------------|----------|----------|----------|----------|----------------|
+
+> Istanbul reports written to ./coverage/ and ./coverage.json

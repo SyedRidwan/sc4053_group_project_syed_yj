@@ -1,0 +1,19 @@
+Deploying a fresh factory to localhost…
+  ✓ seller connected with no sign-up
+  ✓ form explains invalid values before the wallet opens
+  ✓ seller launched Alpha Coin in one transaction and landed on its page
+  ✓ bidder sees the listing on the market
+  ✓ 20 ETH bid confirmed, with a gas limit that covers the sell-out path
+  ✓ 100 ETH bid capped, surplus refunded, auction settled
+  ✓ bidder claimed tokens, and the wallet was asked to add them automatically
+  ✓ seller withdrew the proceeds
+  ✓ result card shows 1,000 ALP sold, under the listing's own symbol
+  ✓ second listing expired, settled at the reserve, burned 500 BET, and left the first listing alone
+  ✓ bidder's portfolio lists bids across both listings, with claim available in place
+  ✓ portfolio tracks a starred coin live, and a bid went through from there
+  ✓ curator hid and verified a listing
+  ✓ hidden listing left the market, and its bidder could still claim
+  ✓ no horizontal scroll on any page at 390px
+  ✓ the How it works simulator plays an auction through to its result
+  ✓ theme toggle works and is remembered
+Passed.

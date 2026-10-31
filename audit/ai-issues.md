@@ -37,6 +37,9 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
 | AI-23 | First launchpad UI looked generic, which the operator had to point out; tests cannot judge this | Medium | 04 | Fixed |
 | AI-24 | Hidden tooltips made the listing page scroll sideways on phones | Low | 04 | Fixed |
 | AI-25 | Displayed prices kept falling after an auction had sold out, contradicting the clearing price on the same page | Medium | 04 | Fixed |
+| AI-26 | Seed task accepted expiry values that crashed it, and the video plan's own command was one of them | Medium | 05 | Fixed |
+| AI-27 | Sell-out preview promised "at least" more tokens than the bidder received (repeat of AI-6) | Medium | 05 | Fixed |
+| AI-28 | A bid estimated as a plain bid could be mined as a sell-out and run out of gas | Medium | 05 | Fixed |
 
 ## AI-1: Rounding over-allocation in claims
 
@@ -340,3 +343,45 @@ The `dutch-auction-token-launch` branch (commit `792b50d`) was produced with an 
   minutes, and the listing page, chart, panel, market and portfolio all use it. Ended auctions now say "Price when it ended".
 - **Evidence:** the `scheduleElapsed` tests in `frontend/src/lib/simulate.test.ts`. On the running site, all four ended coins read the
   same 6 seconds apart, and Meridian showed 0.0263333 ETH at 710 seconds, with needed ETH equal to committed ETH.
+
+## AI-26: Seed values that passed validation and then crashed
+
+- **Why the AI made the mistake:** the seed task's range check accepted `--expires-in` up to 600, but its fixed sequence of bids
+  needed Nova to be at least 840 seconds old, so any value above 360 asked the chain to move time backwards. Every test
+  seeded with 240 and nothing ran the rest of the range. Commit `7b9801a` then wrote `--expires-in 600` into the video plan.
+- **Why it is problematic:** the first command of the recording plan failed with "Timestamp must be a non-negative number". A
+  marker trying a longer countdown would have hit the same crash.
+- **How it was fixed:** Nova's bids now happen during Meridian's sequence, so every accepted value works. Tests cover the two
+  ends of the range and both sides of the old failure point.
+- **Evidence:** `launchpad:seed leaves Nova live for ...` in `evidence/2026-10-31-test-run.txt`, and `npm run demo -- --expires-in 420`
+  run from a fresh clone.
+
+## AI-27: A minimum that was not a minimum
+
+- **Why the AI made the mistake:** the bid preview used one formula, tokens at the current price, for every bid. That is a true
+  minimum for a plain bid. A sell-out bid is capped at the remaining room, which shrinks as the price falls, so by the time it
+  is mined the bidder's accepted ETH and share are smaller. This is the same reasoning error as AI-6, in new code.
+- **Why it is problematic:** the site promised a bidder something false. In a run through the video plan, the preview said
+  "You receive at least 1,589.98 MRD" and the claim paid 1,589.51 MRD. The brief names inaccurate price calculation directly.
+  The contract paid the correct amount; only the wording was wrong.
+- **How it was fixed:** a sell-out preview now reads "You receive about", and its note says "at about" that price. Plain bids
+  keep "at least", which still holds.
+- **Evidence:** `evidence/2026-10-31-ui/` has the before and after screenshots. `frontend/e2e/lifecycle.mjs` now waits for the new
+  wording on a sell-out bid.
+
+## AI-28: Out of gas on the sell-out path
+
+- **Why the AI made the mistake:** `BidForm` left the gas limit to the wallet, but `bid()` costs about 67k gas as a plain bid and
+  about 153k as a sell-out. The wallet estimates before its owner confirms, while the price keeps falling, so a bid can be
+  estimated as one and mined as the other. The tests could not show this: the injected test wallet sends no gas limit, so the
+  local node gave every transaction 16.7 million gas.
+- **Why it is problematic:** a bid close to the sell-out line fails with no change to the auction, and the bidder pays the gas.
+  No funds are at risk, but it is the "unhandled gas limits" issue the brief names. It is most likely on the bid a demo cares
+  about most: on Meridian, 30 seconds in a wallet removes about 2 ETH of room.
+- **How it was fixed:** the site now sends a fixed limit of 200,000 gas with each bid. Unused gas is returned. `spec.md` section 5
+  records the rule.
+- **Evidence:** a probe with limits of 100%, 115%, 120%, 150% and 200% of the estimate ran out of gas every time, and two tests in
+  `test/LaunchFactory.test.js` ("Gas limit for bids") keep that result and show 200,000 is enough. Removing the limit from
+  `BidForm` makes the end-to-end test fail with "Bid sent without the fixed gas limit: 0x1000000".
+- **Limit:** this was tested on the local node, not in the real MetaMask extension, and how much margin MetaMask adds to its
+  estimate was not measured.

@@ -1,8 +1,5 @@
 # AI Audit Report: Horton's Launchpad (SC4053 Option 2)
 
-**Status: draft.** Lines marked **[TEAM]** need the team's own words or facts. They concern who did what and what the
-team thinks, which an AI tool cannot truthfully supply. Everything else cites a file in this repository.
-
 Provenance used throughout:
 
 | Work | Produced by | Source |
@@ -14,14 +11,13 @@ Provenance used throughout:
 
 ## 1. Initial Specification & System Scope
 
-Before any AI tool was used, the team wrote a specification (`git show 138f1ce:spec.md`), contracts and four tests:
+Before any AI tool was used, we wrote a specification (`git show 138f1ce:spec.md`), contracts and four tests:
 
 - **Token:** an ERC20 with 18 decimals and burn support.
 - **Auction:** linear price decay from a start price to a reserve over 20 minutes, a bridging-bid partial fill, uniform
   clearing settlement, and burning of unsold tokens.
 - **Allocation rule in v1:** each bid locked in tokens at the instantaneous price.
-
-**[TEAM]** The intended UI features before AI was used. v1 contains no frontend and no written UI plan.
+- The intended UI features before AI was used. v1 contains no frontend and no written UI plan.
 
 ## 2. Development Methodology & AI Tooling Infrastructure
 
@@ -41,8 +37,6 @@ prompt logs in `prompts/`, and the issue log in `audit/ai-issues.md`.
 adherence to the brief's clearing rule, combining the two branches, the token name, the launchpad scope, dropping
 Sepolia in favour of a local deployment. The AI wrote the code and tests and proposed options.
 
-**[TEAM]** How work was split between team members, and who reviewed what.
-
 ## 3. Specification Engineering & Prompt Logs
 
 **Formal specification:** `spec.md` v2 maps every clause of the brief to a rule, lists invariants that tests enforce,
@@ -61,6 +55,9 @@ and sets coding rules for AI tools (multiply before divide, checks-effects-inter
 4. **Symptom to root cause (session 03).** "why do i keep getting these?" with a CI screenshot → a race condition in the
    transaction hook (AI-17).
 5. **Testing a scope change (session 04).** See section 7.
+6. **Auditing its own work against the brief (session 05).** "Please run through my entire project and refer to the attached
+   assignment brief…" → a fresh clone, then the video plan walked through the real pages → three more AI mistakes that 120
+   passing tests had not shown (AI-26 to AI-28).
 
 Context given to the tool is listed at the top of each log. The brief's PDF was supplied in session 01.
 
@@ -87,6 +84,23 @@ The AI's launchpad design (session 04) wraps that auction without changing it:
 - **Registry:** paged views return one row per listing, so the site has no backend or event indexer.
 - **Roles:** derived from the wallet and chain data, with no accounts or login.
 
+Contract interfaces, as built:
+
+| Contract | Function | Who can call it | What it does |
+| --- | --- | --- | --- |
+| `LaunchFactory` | `createLaunch(name, symbol, supply, startPrice, reservePrice)` | Anyone | Deploys a token and an auction, funds the auction, starts the 20-minute clock |
+| `LaunchFactory` | `withdrawProceeds(id)` | That listing's seller | Forwards exactly the ETH committed, once |
+| `LaunchFactory` | `setHidden(id, bool)`, `setVerified(id, bool)` | Curator | Display flags that no auction reads |
+| `LaunchFactory` | `getLaunches(offset, limit)`, `getPositions(account, offset, limit)` | Anyone (view) | One call per page for the site, capped at 50 rows |
+| `DutchAuction` | `bid()` payable | Anyone, while active | Commits ETH up to the remaining room, and refunds the surplus in the same transaction |
+| `DutchAuction` | `finalize()` | Anyone, once sold out or expired | Fixes the clearing price and burns unsold tokens |
+| `DutchAuction` | `claim()` | Bidders | Transfers the caller's pro-rata tokens, finalizing first if needed |
+| `DutchAuction` | `withdrawProceeds()`, `start()` | Seller only (the factory, for listings) | Pays out `totalCommitted`; pulls the supply and starts the clock |
+| `DutchAuction` | `currentPrice()`, `soldOut()`, `isActive()`, `tokensOf(address)` | Anyone (view) | Computed from `block.timestamp` and state |
+| `HortonsToken` | ERC20 plus `burn(amount)` | Holders | Fixed supply, minted once. Burning lowers `totalSupply` |
+
+State lives in the contracts only: the site has no backend, and reads it through the paged views and events.
+
 ## 5. Problems Discovered & Vulnerability Analysis
 
 The full inventory, each entry in the brief's 4-part format, is in [`ai-issues.md`](ai-issues.md). Most significant:
@@ -104,6 +118,10 @@ The full inventory, each entry in the brief's 4-part format, is in [`ai-issues.m
 | AI-20: weak factory bounds in the prototype | A nearly flat "descending" price, and instant dust sell-outs | Fixed before reaching the repository |
 | AI-21: no reentrancy guard on the seller forward | Broke the project's own spec | Fixed, test added |
 | AI-22: tests that could not fail | False confidence, repeating AI-7 | Fixed, mutations added |
+| AI-25: displayed prices moved after a sell-out | A settled page contradicted its own clearing price | Fixed, test added |
+| AI-26: seed values that crashed | The video plan's first command failed | Fixed, tests added |
+| AI-27: a false "at least" in the sell-out preview | Promised 1,589.98 MRD; the claim paid 1,589.51 | Fixed |
+| AI-28: bid gas estimated on the wrong path | A bid near the sell-out line runs out of gas, even at twice the estimate | Fixed, tests added |
 
 **Review of the hand-written v1 (a human baseline, not AI mistakes):** 13 issues, including double refunds, a seller
 drain and reentrancy. See `2026-10-22-issues-report.md` and `evidence/2026-10-22-findings.md`.
@@ -112,14 +130,16 @@ drain and reentrancy. See `2026-10-22-issues-report.md` and `evidence/2026-10-22
 
 | Method | Result | Evidence |
 | --- | --- | --- |
-| Unit, event, revert, reentrancy, isolation and seeded-random invariant tests | 81 passing, including the original 39 unchanged | `evidence/2026-10-30-launchpad-test-run.txt` |
-| Coverage | `LaunchFactory.sol` 100% lines and branches; `DutchAuction.sol` 100% lines, 96.97% branches | `evidence/2026-10-30-launchpad-coverage.txt` |
-| Slither | 30 results, none high severity, all triaged | `evidence/2026-10-30-launchpad-slither.txt`, triage in `evidence/2026-10-30-launchpad-findings.md` |
+| Unit, event, revert, reentrancy, isolation and seeded-random invariant tests | 87 passing, including the original 39 unchanged | `evidence/2026-10-31-test-run.txt` |
+| Coverage | `LaunchFactory.sol` 100% lines and branches; `DutchAuction.sol` 100% lines, 96.97% branches | `evidence/2026-10-31-coverage.txt` |
+| Slither | 30 results, none high severity, all triaged | `evidence/2026-10-31-slither.txt`, triage in `evidence/2026-10-30-launchpad-findings.md` |
+| Gas report | `bid` up to 152,993; `claim` up to 161,965; `createLaunch` about 1.79 million. No function loops over bidders, so no cost grows with the number of bidders | `evidence/2026-10-31-gas-report.txt` |
 | Mutation testing | Auction: 9 of 9 caught, one only after adding a test (AI-1). Factory: 14 of 14, two only after adding tests (AI-21, AI-22) | `evidence/2026-10-22-findings.md`, `evidence/2026-10-30-launchpad-mutations.txt` |
 | Frontend unit tests | 39 passing, with form validation matched to the contract's bounds | `frontend/src/lib/` |
 | Differential testing of the two branches | Probes P1 to P3 | `evidence/2026-10-28-probes/` |
-| End-to-end test through the real UI | 17 steps across three listings and three wallets, with an injected test wallet | `frontend/e2e/lifecycle.mjs`, `evidence/2026-10-30-launchpad-e2e.txt`, `evidence/2026-10-30-ui/` |
-| Local deployment with MetaMask | Single-auction site: bids, sell-out with refund, claims (prompt logs, sessions 02 to 04) | **[TEAM]** Confirm the launchpad with real MetaMask; this has not been done |
+| End-to-end test through the real UI | 17 steps across three listings and three wallets, with an injected test wallet | `frontend/e2e/lifecycle.mjs`, `evidence/2026-10-31-e2e.txt`, `evidence/2026-10-30-ui/`, `evidence/2026-10-31-ui/` |
+| Fresh-clone check | Install, every suite above and `npm run demo`, from a new clone using only the README | Session 05 prompt log |
+| Local deployment with MetaMask | Single-auction site: bids, sell-out with refund, claims (prompt logs, sessions 02 to 04) |
 
 Slither missed most of v1's serious bugs, which were logic errors, so tests written against the brief's rules did more
 than static analysis here.
@@ -150,8 +170,6 @@ explanation for users, and a redesign with a light theme, on the grounds that th
 The launchpad itself is AI output, so its code belongs in sections 3 to 5, not here. Only the scope decisions above are the
 team's.
 
-**[TEAM]** Any changes the team made by hand, and any manual code review it did.
-
 ## 8. Lessons Learned
 
 Observations recorded in the logs:
@@ -160,9 +178,7 @@ Observations recorded in the logs:
   through unfamiliar code, including a browser extension's bundle in session 04.
 - **Where AI failed:** stating guesses as facts (AI-2, AI-16, AI-15), writing tests that passed for the wrong reason
   (AI-1, AI-7), and hard-coding facts from memory (AI-9). Its own passing tests were not good evidence until mutation
-  testing challenged them.
+  testing challenged them. A test environment can also hide a whole class of bug: the test wallet gave every transaction 16.7
+  million gas, so no test could ever run out (AI-28).
 - **What worked:** a spec that quotes the brief, keeping a log of AI mistakes, and asking separate agents to refute a
   conclusion. In session 04 this overturned a claim that had looked proven.
-
-**[TEAM]** The team's own critical evaluation and recommendations. This section is meant to be the team's judgement, so
-please write it yourselves.

@@ -59,6 +59,9 @@ over a 20-minute window.
 - `SafeERC20` for all token transfers; burn with `ERC20Burnable.burn`, never by transfer to `address(0)`.
 - Never send `address(this).balance`; pay only computed, tracked amounts.
 - Tests assert ETH and token balances, events, reverts and invariants, not only token balances.
+- A function whose gas cost depends on when it is mined must not rely on a wallet's estimate. `bid()` costs about 67k gas
+  as a plain bid and about 153k as a sell-out, and the price can cross that line while a wallet waits, so the web app sends
+  a fixed limit of 200k.
 
 ## 6. Launchpad (v3)
 
