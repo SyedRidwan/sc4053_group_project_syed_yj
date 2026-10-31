@@ -7,7 +7,7 @@ import { REFRESH_MS } from "../hooks/useAuction";
 import type { Listing } from "../hooks/useLaunches";
 import { paramsOf } from "../hooks/useLaunches";
 import { useTx } from "../hooks/useTx";
-import { ethToSellOut, minTokens, previewBid } from "../lib/auction";
+import { BID_GAS_LIMIT, ethToSellOut, minTokens, previewBid } from "../lib/auction";
 import { formatEth, formatToken } from "../lib/format";
 import type { ChainId } from "../wagmi";
 import { Row, TxStatusLine } from "./ui";
@@ -65,7 +65,7 @@ export function BidForm({
     }
     if (value === null || value <= 0n || dust) return;
     const ok = await tx.run("Bid", () =>
-      writeContractAsync({ address: listing.auction, abi: dutchAuctionAbi, functionName: "bid", value, chainId })
+      writeContractAsync({ address: listing.auction, abi: dutchAuctionAbi, functionName: "bid", value, gas: BID_GAS_LIMIT, chainId })
     );
     if (ok) setAmount("");
   }
@@ -115,11 +115,14 @@ export function BidForm({
         <div className="preview">
           <Row label="Accepted">{formatEth(preview.accepted)}</Row>
           {preview.refund > 0n && <Row label="Refunded immediately">{formatEth(preview.refund)}</Row>}
-          <Row label="You receive at least">{formatToken(minTokens(commitment + preview.accepted, price), listing.symbol)}</Row>
+          {/* A sell-out's accepted amount shrinks with the price until it is mined, so its share is only an estimate */}
+          <Row label={preview.sellsOut ? "You receive about" : "You receive at least"}>
+            {formatToken(minTokens(commitment + preview.accepted, price), listing.symbol)}
+          </Row>
           {preview.sellsOut && (
             <p className="callout">
-              This bid sells out the auction at {formatEth(price)} per {listing.symbol}. The surplus comes back in the same
-              transaction, and every bidder pays that price.
+              This bid sells out the auction at about {formatEth(price)} per {listing.symbol}. The surplus comes back in the same
+              transaction, and every bidder pays the final price.
             </p>
           )}
         </div>

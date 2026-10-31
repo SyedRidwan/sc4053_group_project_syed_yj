@@ -4,6 +4,13 @@
 export const DURATION = 1200n;
 export const TOKEN_UNIT = 10n ** 18n;
 
+/**
+ * A wallet estimates gas before its owner confirms, but the price keeps falling meanwhile. A bid estimated as a plain bid
+ * (about 67k gas) can be mined as the sell-out path (about 153k), which runs out of gas even at twice the estimate. Unused
+ * gas is returned, so a fixed limit above the dearest path costs nothing. test/LaunchFactory.test.js checks it.
+ */
+export const BID_GAS_LIMIT = 200_000n;
+
 export interface AuctionParams {
   totalTokens: bigint;
   startPrice: bigint;

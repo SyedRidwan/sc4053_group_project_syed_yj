@@ -189,10 +189,13 @@ try {
   await waitText(bidder, "You receive at least");
   await clickButton(bidder, "Place bid");
   await waitText(bidder, "Bid confirmed");
-  step("20 ETH bid confirmed");
+  const { transactions } = await rpc("eth_getBlockByNumber", ["latest", true]);
+  if (BigInt(transactions[0].gas) !== 200000n) await fail(bidder, `Bid sent without the fixed gas limit: ${transactions[0].gas}`);
+  step("20 ETH bid confirmed, with a gas limit that covers the sell-out path");
 
   await bidder.locator("#bid-amount").fill("100");
   await waitText(bidder, "This bid sells out the auction");
+  await waitText(bidder, "You receive about");
   await bidder.screenshot({ path: path.join(OUT, "3-sellout-preview.png"), fullPage: true });
   await clickButton(bidder, "Place bid");
   await waitText(bidder, "Settled");

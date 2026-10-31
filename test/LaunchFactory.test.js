@@ -337,6 +337,35 @@ describe("LaunchFactory", function () {
     });
   });
 
+  describe("Gas limit for bids", function () {
+    const BID_GAS_LIMIT = 200_000n; // frontend/src/lib/auction.ts
+
+    // The price falls while a wallet waits for its owner, so a plain bid can reach the chain as a sell-out
+    async function bidEstimatedBeforeTheSellOut() {
+      const { auction } = await createLaunch(seller1);
+      await auction.connect(alice).bid({ value: E("10") });
+      const room = (SUPPLY * (await auction.currentPrice())) / E("1") - (await auction.totalCommitted());
+      const value = room - E("0.5");
+      const estimate = await auction.connect(bob).bid.estimateGas({ value });
+      await time.increase(30);
+      return { auction, value, estimate };
+    }
+
+    it("a bid estimated as a plain bid runs out of gas on the sell-out path, even at twice the estimate", async function () {
+      const { auction, value, estimate } = await bidEstimatedBeforeTheSellOut();
+      await expect(auction.connect(bob).bid({ value, gasLimit: estimate * 2n })).to.be.reverted;
+      expect(await auction.finalized()).to.equal(false);
+    });
+
+    it("the site's fixed limit covers that bid, and the surplus still comes back", async function () {
+      const { auction, value } = await bidEstimatedBeforeTheSellOut();
+      const receipt = await (await auction.connect(bob).bid({ value, gasLimit: BID_GAS_LIMIT })).wait();
+      expect(receipt.gasUsed).to.be.lessThan(BID_GAS_LIMIT);
+      expect(await auction.finalized()).to.equal(true);
+      expect(await auction.commitments(bob.address)).to.be.lessThan(value);
+    });
+  });
+
   describe("Listing views", function () {
     it("pages through 51 listings and clamps the page size to 50", async function () {
       this.timeout(120000);
