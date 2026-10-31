@@ -73,6 +73,18 @@ describe("Hardhat launchpad tasks", function () {
     expect(await token.totalSupply()).to.equal(ethers.parseEther("1250"));
   });
 
+  // The video plan relies on the longer countdowns, so check the whole accepted range
+  for (const expiresIn of [30, 360, 361, 600]) {
+    it(`launchpad:seed leaves Nova live for ${expiresIn} seconds`, async function () {
+      await hre.run("launchpad:seed", { expiresIn });
+      const { bySymbol } = await rows();
+      const remaining = bySymbol.NOVA.endTime - BigInt(await time.latest());
+      expect(remaining).to.be.closeTo(BigInt(expiresIn), 20n);
+      expect(bySymbol.NOVA.totalCommitted).to.equal(ethers.parseEther("5"));
+      expect(bySymbol.NOVA.finalized).to.equal(false);
+    });
+  }
+
   it("launchpad:seed rejects an expiry too close or too far", async function () {
     await expect(hre.run("launchpad:seed", { expiresIn: 5 })).to.be.rejectedWith("--expires-in");
     await expect(hre.run("launchpad:seed", { expiresIn: 900 })).to.be.rejectedWith("--expires-in");

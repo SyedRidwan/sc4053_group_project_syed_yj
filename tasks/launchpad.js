@@ -103,11 +103,7 @@ task("launchpad:seed", "Deploys the factory and fills the market with listings i
 
     // Expires shortly after seeding, with too little ETH to sell out, so the burn happens live
     const nova = await create(sellerB, "Nova", "NOVA", "5000", "0.02", "0.004");
-    await advance(120);
-    await bid(nova, bidder1, "3");
-    await advance(120);
-    await bid(nova, bidder4, "2");
-    await advance(novaElapsed - 600 - 240);
+    await advance(novaElapsed - 600);
 
     // Halfway through, with enough room left for a bridging bid to sell it out and get a refund
     const meridian = await create(sellerA, "Meridian", "MRD", "2000", "0.05", "0.01");
@@ -116,8 +112,10 @@ task("launchpad:seed", "Deploys the factory and fills the market with listings i
     await create(scammer, "Free Money", "FREE", "1000000", "0.001", "0.0001");
     await advance(300);
     await bid(meridian, bidder3, "6");
+    await bid(nova, bidder1, "3");
     await advance(300);
     await bid(meridian, bidder4, "4");
+    await bid(nova, bidder4, "2");
 
     // The main listing: a full 20 minutes from now, with two opening bids
     const hortons = await create(sellerA, "Horton's", "TIM", "1000", "0.1", "0.02");

@@ -6,7 +6,7 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage",
-    "slither": "slither . --filter-paths node_modules",
+    "slither": "slither . --filter-paths \"node_modules|ReentrancyAttacker|LaunchTestHelpers\"",
     "node": "hardhat node",
     "seed": "hardhat launchpad:seed --network localhost",
     "demo": "node scripts/demo.js",
